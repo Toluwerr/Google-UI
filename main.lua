@@ -452,7 +452,7 @@ function Google:CreateWindow(config)
 		ZIndex = 2,
 		Parent = main
 	})
-	Corner(body, 7)
+	Corner(body, 11)
 	self.Body = body
 	self.MainStroke = Stroke(body, Google.Theme.Border, 0.05, 1)
 
@@ -483,7 +483,7 @@ function Google:CreateWindow(config)
 		BorderSizePixel = 0,
 		Parent = topbar
 	})
-	Corner(titleIconWrap, 7)
+	Corner(titleIconWrap, 9)
 	self.TitleIconWrap = titleIconWrap
 	self.TitleIcon = Google.CreateIcon(self.Icon, 19, Google.Theme.Primary, titleIconWrap, {
 		Position = UDim2.fromScale(0.5, 0.5),
@@ -541,7 +541,7 @@ function Google:CreateWindow(config)
 		AutoButtonColor = false,
 		Parent = controls
 	})
-	Corner(minimizeButton, 6)
+	Corner(minimizeButton, 7)
 	self.MinimizeButton = minimizeButton
 	self.MinimizeIcon = Google.CreateIcon("minus", 16, Google.Theme.Muted, minimizeButton, {
 		AnchorPoint = Vector2.new(0.5, 0.5),
@@ -559,7 +559,7 @@ function Google:CreateWindow(config)
 		AutoButtonColor = false,
 		Parent = controls
 	})
-	Corner(closeButton, 6)
+	Corner(closeButton, 7)
 	self.CloseButton = closeButton
 	self.CloseIcon = Google.CreateIcon("x", 15, Google.Theme.Muted, closeButton, {
 		AnchorPoint = Vector2.new(0.5, 0.5),
@@ -700,7 +700,7 @@ function Window:CreateTab(config)
 		AutoButtonColor = false,
 		Parent = self.TabList
 	})
-	Corner(button, 6)
+	Corner(button, 8)
 	tab.Button = button
 
 	local accent = New("Frame", {
@@ -712,7 +712,7 @@ function Window:CreateTab(config)
 		Visible = false,
 		Parent = button
 	})
-	Corner(accent, 3)
+	Corner(accent, 4)
 	tab.Accent = accent
 
 	tab.IconLabel = Google.CreateIcon(tab.Icon, 17, Google.Theme.Muted, button, {
@@ -838,7 +838,7 @@ function Tab:CreateSection(config)
 		ClipsDescendants = true,
 		Parent = self.Page
 	})
-	Corner(frame, 7)
+	Corner(frame, 10)
 	section.Instance = frame
 	section.Stroke = Stroke(frame, Google.Theme.Border, 0.05, 1)
 
@@ -1009,7 +1009,7 @@ function Section:CreateButton(config)
 		AutoButtonColor = false,
 		Parent = self.Instance
 	})
-	Corner(button, 6)
+	Corner(button, 8)
 	self.Button = button
 	local iconOffset = self.Icon and 34 or 12
 	if self.Icon then
@@ -1130,12 +1130,6 @@ function Section:CreateToggle(config)
 	end
 	Connect(self.Connections, switch.MouseButton1Click, function()
 		self:Set(not self.Value)
-	end)
-	Connect(self.Connections, switch.MouseEnter, function()
-		Tween(self.Knob, {Size = UDim2.fromOffset(20, 20)}, Motion.Fast)
-	end)
-	Connect(self.Connections, switch.MouseLeave, function()
-		Tween(self.Knob, {Size = UDim2.fromOffset(18, 18)}, Motion.Fast)
 	end)
 	Connect(self.Connections, self.Instance.InputBegan, function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -1306,7 +1300,7 @@ function Section:CreateDropdown(config)
 		AutoButtonColor = false,
 		Parent = self.Instance
 	})
-	Corner(self.Main, 6)
+	Corner(self.Main, 8)
 	self.MainStroke = Stroke(self.Main, Google.Theme.Border, 0.08, 1)
 	self.Label = New("TextLabel", {
 		Text = config.Name or "Dropdown",
@@ -1345,7 +1339,7 @@ function Section:CreateDropdown(config)
 		Visible = false,
 		Parent = self.Instance
 	})
-	Corner(self.Menu, 6)
+	Corner(self.Menu, 8)
 	self.MenuStroke = Stroke(self.Menu, Google.Theme.Border, 0.08, 1)
 	local searchOffset = 0
 	if self.Searchable then
@@ -1363,7 +1357,7 @@ function Section:CreateDropdown(config)
 			BorderSizePixel = 0,
 			Parent = self.Menu
 		})
-		Corner(self.SearchBox, 6)
+		Corner(self.SearchBox, 8)
 		self.SearchStroke = Stroke(self.SearchBox, Google.Theme.Border, 0.08, 1)
 		Padding(self.SearchBox, 8, 8, 0, 0)
 		searchOffset = 36
@@ -1407,7 +1401,7 @@ function Section:CreateDropdown(config)
 				LayoutOrder = i,
 				Parent = self.OptionsFrame
 			})
-			Corner(item, 6)
+			Corner(item, 7)
 			local label = New("TextLabel", {
 				Text = tostring(option),
 				Font = Enum.Font.Gotham,
@@ -1586,7 +1580,7 @@ function Section:CreateTextbox(config)
 		ClearTextOnFocus = false,
 		Parent = self.Instance
 	})
-	Corner(self.Entry, 6)
+	Corner(self.Entry, 8)
 	Padding(self.Entry, 10, 10, 0, 0)
 	self.EntryStroke = Stroke(self.Entry, Google.Theme.Border, 0.08, 1)
 	function self:Set(value)
@@ -1661,7 +1655,7 @@ function Section:CreateKeybind(config)
 		AutoButtonColor = false,
 		Parent = self.Instance
 	})
-	Corner(self.Button, 6)
+	Corner(self.Button, 8)
 	self.ButtonStroke = Stroke(self.Button, Google.Theme.Border, 0.08, 1)
 	function self:Set(keycode)
 		self.Value = keycode
@@ -1765,7 +1759,7 @@ function Section:CreateColorPicker(config)
 		AutoButtonColor = false,
 		Parent = self.Instance
 	})
-	Corner(self.Button, 6)
+	Corner(self.Button, 8)
 	self.ButtonStroke = Stroke(self.Button, Google.Theme.Border, 0.08, 1)
 	self.Palette = New("Frame", {
 		Size = UDim2.new(1, 0, 0, 0),
@@ -1801,7 +1795,7 @@ function Section:CreateColorPicker(config)
 			AutoButtonColor = false,
 			Parent = self.Palette
 		})
-		Corner(swatch, 6)
+		Corner(swatch, 8)
 		Stroke(swatch, Google.Theme.Border, 0.12, 1)
 		Connect(self.Connections, swatch.MouseButton1Click, function()
 			self:Set(color)
@@ -1879,7 +1873,7 @@ function Section:CreateParagraph(config)
 	local self = Control(self, height, "Paragraph")
 	self.Instance.BackgroundTransparency = 0
 	self.Instance.BackgroundColor3 = Google.Theme.CardAlt
-	Corner(self.Instance, 6)
+	Corner(self.Instance, 8)
 	self.Stroke = Stroke(self.Instance, Google.Theme.Border, 0.1, 1)
 	if title then
 		self.TitleLabel = New("TextLabel", {
@@ -2137,7 +2131,7 @@ function NotificationManager:Push(config)
 		ClipsDescendants = true,
 		Parent = self.Holder
 	})
-	Corner(frame, 7)
+	Corner(frame, 10)
 	Stroke(frame, Google.Theme.Border, 0.05, 1)
 	local iconWrap = New("Frame", {
 		Size = UDim2.fromOffset(34, 34),
@@ -2146,7 +2140,7 @@ function NotificationManager:Push(config)
 		BorderSizePixel = 0,
 		Parent = frame
 	})
-	Corner(iconWrap, 6)
+	Corner(iconWrap, 8)
 	Google.CreateIcon(config.Icon or "info", 18, config.IconColor or Google.Theme.Primary, iconWrap, {
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.5)
@@ -2233,7 +2227,7 @@ function Google:Confirm(config)
 		BorderSizePixel = 0,
 		Parent = overlay
 	})
-	Corner(dialog, 10)
+	Corner(dialog, 12)
 	Stroke(dialog, Google.Theme.Border, 0.05, 1)
 	New("TextLabel", {
 		Text = config.Title or "Confirm",
@@ -2270,7 +2264,7 @@ function Google:Confirm(config)
 		AutoButtonColor = false,
 		Parent = dialog
 	})
-	Corner(cancel, 7)
+	Corner(cancel, 8)
 	local confirm = New("TextButton", {
 		Text = config.ConfirmText or "Confirm",
 		Font = Enum.Font.GothamBold,
@@ -2283,7 +2277,7 @@ function Google:Confirm(config)
 		AutoButtonColor = false,
 		Parent = dialog
 	})
-	Corner(confirm, 7)
+	Corner(confirm, 8)
 	cancel.MouseButton1Click:Connect(function()
 		gui:Destroy()
 		callback(false)
@@ -2318,7 +2312,7 @@ function Google:Prompt(config)
 		BorderSizePixel = 0,
 		Parent = overlay
 	})
-	Corner(dialog, 10)
+	Corner(dialog, 12)
 	Stroke(dialog, Google.Theme.Border, 0.05, 1)
 	New("TextLabel", {
 		Text = config.Title or "Input",
@@ -2358,7 +2352,7 @@ function Google:Prompt(config)
 		BorderSizePixel = 0,
 		Parent = dialog
 	})
-	Corner(input, 7)
+	Corner(input, 8)
 	Stroke(input, Google.Theme.Border, 0.08, 1)
 	Padding(input, 10, 10, 0, 0)
 	local cancel = New("TextButton", {
@@ -2373,7 +2367,7 @@ function Google:Prompt(config)
 		AutoButtonColor = false,
 		Parent = dialog
 	})
-	Corner(cancel, 7)
+	Corner(cancel, 8)
 	local confirm = New("TextButton", {
 		Text = config.ConfirmText or "Submit",
 		Font = Enum.Font.GothamBold,
@@ -2386,7 +2380,7 @@ function Google:Prompt(config)
 		AutoButtonColor = false,
 		Parent = dialog
 	})
-	Corner(confirm, 7)
+	Corner(confirm, 8)
 	cancel.MouseButton1Click:Connect(function()
 		gui:Destroy()
 		callback(nil)
