@@ -443,7 +443,7 @@ function Google:CreateWindow(config)
 	})
 	self.Instance = main
 
-	local body = New("Frame", {
+	local body = New("CanvasGroup", {
 		Name = "Body",
 		Size = UDim2.fromScale(1, 1),
 		BackgroundColor3 = Google.Theme.Window,
@@ -452,7 +452,7 @@ function Google:CreateWindow(config)
 		ZIndex = 2,
 		Parent = main
 	})
-	Corner(body, 11)
+	Corner(body, 18)
 	self.Body = body
 	self.MainStroke = Stroke(body, Google.Theme.Border, 0.05, 1)
 
@@ -464,6 +464,7 @@ function Google:CreateWindow(config)
 		Parent = body
 	})
 	self.Topbar = topbar
+	Corner(topbar, 18)
 
 	local topbarLine = New("Frame", {
 		Name = "TopbarLine",
