@@ -791,8 +791,11 @@ function Tab.new(window, config)
 	end)
 
 	window.TabButtons[self] = button
-	window.TabListLayout:Apply()
-	window.TabListFrame.CanvasSize = UDim2.new(0,0,0,window.TabListLayout.AbsoluteContentSize.Y)
+	task.defer(function()
+		if window.TabListFrame and window.TabListLayout then
+			window.TabListFrame.CanvasSize = UDim2.new(0, 0, 0, window.TabListLayout.AbsoluteContentSize.Y)
+		end
+	end)
 
 	return self
 end
