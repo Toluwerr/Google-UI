@@ -388,29 +388,12 @@ function Google:CreateWindow(config)
 		Size = self.Size,
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = self.Position or UDim2.fromScale(0.5, 0.5),
-		BackgroundColor3 = Google.Theme.Window,
+		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		ClipsDescendants = false,
 		Parent = gui
 	})
 	self.Instance = main
-	Corner(main, 10)
-	self.MainStroke = Stroke(main, Google.Theme.Border, 0.05, 1)
-
-	local shadow = New("ImageLabel", {
-		Name = "Shadow",
-		BackgroundTransparency = 1,
-		Image = "rbxassetid://6015897843",
-		ImageColor3 = Google.Theme.Shadow,
-		ImageTransparency = 0.82,
-		ScaleType = Enum.ScaleType.Slice,
-		SliceCenter = Rect.new(49, 49, 450, 450),
-		Size = UDim2.new(1, 28, 1, 28),
-		Position = UDim2.fromOffset(-14, -10),
-		ZIndex = 0,
-		Parent = main
-	})
-	self.Shadow = shadow
 
 	local body = New("Frame", {
 		Name = "Body",
@@ -423,6 +406,7 @@ function Google:CreateWindow(config)
 	})
 	Corner(body, 10)
 	self.Body = body
+	self.MainStroke = Stroke(body, Google.Theme.Border, 0.05, 1)
 
 	local topbar = New("Frame", {
 		Name = "Topbar",
@@ -1881,10 +1865,9 @@ end
 
 function Window:ApplyTheme()
 	local theme = Google.Theme
-	self.Instance.BackgroundColor3 = theme.Window
+	self.Instance.BackgroundTransparency = 1
 	self.Body.BackgroundColor3 = theme.Window
 	self.MainStroke.Color = theme.Border
-	self.Shadow.ImageColor3 = theme.Shadow
 	self.Topbar.BackgroundColor3 = theme.Topbar
 	self.TopbarLine.BackgroundColor3 = theme.Border
 	self.Sidebar.BackgroundColor3 = theme.Sidebar
