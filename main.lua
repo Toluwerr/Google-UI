@@ -38,7 +38,7 @@ local function CleanupExistingInterfaces(primaryParent)
 	for parent in pairs(targets) do
 		for _, child in ipairs(parent:GetChildren()) do
 			local name = child.Name
-			if child:IsA("ScreenGui") and (name == "GoogleUI" or name == "GoogleNotifications" or string.sub(name, 1, 13) == "GoogleWindow_") then
+			if child:IsA("ScreenGui") and (name == "GoogleUI" or name == "GoogleNotifications" or name == "GoogleUINotifications" or string.sub(name, 1, 13) == "GoogleWindow_") then
 				pcall(function()
 					child:Destroy()
 				end)
@@ -87,8 +87,19 @@ local function Padding(parent, left, right, top, bottom)
 	return padding
 end
 
+local Motion = {
+	Fast = 0.12,
+	Base = 0.18,
+	Slow = 0.26,
+	Style = Enum.EasingStyle.Quint,
+	Direction = Enum.EasingDirection.Out
+}
+
 local function Tween(object, properties, duration, style, direction, callback)
-	local tween = TweenService:Create(object, TweenInfo.new(duration or 0.16, style or Enum.EasingStyle.Quad, direction or Enum.EasingDirection.Out), properties)
+	if not object then
+		return nil
+	end
+	local tween = TweenService:Create(object, TweenInfo.new(duration or Motion.Base, style or Motion.Style, direction or Motion.Direction), properties)
 	if callback then
 		local connection
 		connection = tween.Completed:Connect(function()
@@ -100,6 +111,13 @@ local function Tween(object, properties, duration, style, direction, callback)
 	end
 	tween:Play()
 	return tween
+end
+
+local function ScaleUDim2(size, offset)
+	if size.X.Scale == 0 and size.Y.Scale == 0 then
+		return UDim2.fromOffset(math.max(0, size.X.Offset + offset), math.max(0, size.Y.Offset + offset))
+	end
+	return size
 end
 
 local function Connect(list, signal, callback)
@@ -415,7 +433,7 @@ function Google:CreateWindow(config)
 
 	local main = New("Frame", {
 		Name = "Window",
-		Size = self.Size,
+		Size = ScaleUDim2(self.Size, -14),
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = self.Position or UDim2.fromScale(0.5, 0.5),
 		BackgroundTransparency = 1,
@@ -434,7 +452,7 @@ function Google:CreateWindow(config)
 		ZIndex = 2,
 		Parent = main
 	})
-	Corner(body, 10)
+	Corner(body, 7)
 	self.Body = body
 	self.MainStroke = Stroke(body, Google.Theme.Border, 0.05, 1)
 
@@ -465,7 +483,7 @@ function Google:CreateWindow(config)
 		BorderSizePixel = 0,
 		Parent = topbar
 	})
-	Corner(titleIconWrap, 8)
+	Corner(titleIconWrap, 7)
 	self.TitleIconWrap = titleIconWrap
 	self.TitleIcon = Google.CreateIcon(self.Icon, 19, Google.Theme.Primary, titleIconWrap, {
 		Position = UDim2.fromScale(0.5, 0.5),
@@ -523,7 +541,7 @@ function Google:CreateWindow(config)
 		AutoButtonColor = false,
 		Parent = controls
 	})
-	Corner(minimizeButton, 7)
+	Corner(minimizeButton, 6)
 	self.MinimizeButton = minimizeButton
 	self.MinimizeIcon = Google.CreateIcon("minus", 16, Google.Theme.Muted, minimizeButton, {
 		AnchorPoint = Vector2.new(0.5, 0.5),
@@ -541,7 +559,7 @@ function Google:CreateWindow(config)
 		AutoButtonColor = false,
 		Parent = controls
 	})
-	Corner(closeButton, 7)
+	Corner(closeButton, 6)
 	self.CloseButton = closeButton
 	self.CloseIcon = Google.CreateIcon("x", 15, Google.Theme.Muted, closeButton, {
 		AnchorPoint = Vector2.new(0.5, 0.5),
@@ -559,18 +577,18 @@ function Google:CreateWindow(config)
 		self:Destroy()
 	end)
 	Connect(self.Connections, minimizeButton.MouseEnter, function()
-		Tween(minimizeButton, {BackgroundTransparency = 0}, 0.12)
+		Tween(minimizeButton, {BackgroundTransparency = 0}, Motion.Fast)
 	end)
 	Connect(self.Connections, minimizeButton.MouseLeave, function()
-		Tween(minimizeButton, {BackgroundTransparency = 1}, 0.12)
+		Tween(minimizeButton, {BackgroundTransparency = 1}, Motion.Fast)
 	end)
 	Connect(self.Connections, closeButton.MouseEnter, function()
 		Google.SetIconColor(self.CloseIcon, Color3.new(1, 1, 1))
-		Tween(closeButton, {BackgroundColor3 = Google.Theme.Danger, BackgroundTransparency = 0}, 0.12)
+		Tween(closeButton, {BackgroundColor3 = Google.Theme.Danger, BackgroundTransparency = 0}, Motion.Fast)
 	end)
 	Connect(self.Connections, closeButton.MouseLeave, function()
 		Google.SetIconColor(self.CloseIcon, Google.Theme.Muted)
-		Tween(closeButton, {BackgroundColor3 = Google.Theme.Hover, BackgroundTransparency = 1}, 0.12)
+		Tween(closeButton, {BackgroundColor3 = Google.Theme.Hover, BackgroundTransparency = 1}, Motion.Fast)
 	end)
 
 	local sidebar = New("Frame", {
@@ -655,6 +673,7 @@ function Google:CreateWindow(config)
 
 	table.insert(Google.Windows, self)
 	self:ApplyTheme()
+	Tween(main, {Size = self.Size}, Motion.Slow, Enum.EasingStyle.Quint)
 	return self
 end
 
@@ -681,7 +700,7 @@ function Window:CreateTab(config)
 		AutoButtonColor = false,
 		Parent = self.TabList
 	})
-	Corner(button, 8)
+	Corner(button, 6)
 	tab.Button = button
 
 	local accent = New("Frame", {
@@ -739,12 +758,12 @@ function Window:CreateTab(config)
 	end)
 	Connect(tab.Connections, button.MouseEnter, function()
 		if not tab.Active then
-			Tween(button, {BackgroundTransparency = 0}, 0.12)
+			Tween(button, {BackgroundTransparency = 0}, Motion.Fast)
 		end
 	end)
 	Connect(tab.Connections, button.MouseLeave, function()
 		if not tab.Active then
-			Tween(button, {BackgroundTransparency = 1}, 0.12)
+			Tween(button, {BackgroundTransparency = 1}, Motion.Fast)
 		end
 	end)
 
@@ -773,15 +792,25 @@ end
 
 function Tab:SetActive(active)
 	self.Active = active
-	self.Page.Visible = active
-	self.Accent.Visible = active
 	if active then
-		self.Button.BackgroundTransparency = 0
-		self.Button.BackgroundColor3 = Google.Theme.PrimarySoft
+		self.Page.Visible = true
+		self.Page.Position = UDim2.fromOffset(6, 0)
+		self.Accent.Visible = true
+		self.Accent.BackgroundTransparency = 1
+		self.Accent.Size = UDim2.new(0, 3, 0, 8)
+		Tween(self.Page, {Position = UDim2.fromOffset(0, 0)}, Motion.Base)
+		Tween(self.Accent, {BackgroundTransparency = 0, Size = UDim2.new(0, 3, 0, 18)}, Motion.Base)
+		Tween(self.Button, {BackgroundTransparency = 0, BackgroundColor3 = Google.Theme.PrimarySoft}, Motion.Base)
 		self.TextLabel.TextColor3 = Google.Theme.Primary
 		Google.SetIconColor(self.IconLabel, Google.Theme.Primary)
 	else
-		self.Button.BackgroundTransparency = 1
+		Tween(self.Button, {BackgroundTransparency = 1}, Motion.Fast)
+		Tween(self.Accent, {BackgroundTransparency = 1, Size = UDim2.new(0, 3, 0, 8)}, Motion.Fast, nil, nil, function()
+			if not self.Active then
+				self.Accent.Visible = false
+			end
+		end)
+		self.Page.Visible = false
 		self.TextLabel.TextColor3 = Google.Theme.Muted
 		Google.SetIconColor(self.IconLabel, Google.Theme.Muted)
 	end
@@ -809,7 +838,7 @@ function Tab:CreateSection(config)
 		ClipsDescendants = true,
 		Parent = self.Page
 	})
-	Corner(frame, 9)
+	Corner(frame, 7)
 	section.Instance = frame
 	section.Stroke = Stroke(frame, Google.Theme.Border, 0.05, 1)
 
@@ -899,22 +928,34 @@ end
 
 function Section:SetCollapsed(collapsed)
 	self.Collapsed = collapsed
-	self.Content.Visible = not collapsed
+	if not collapsed then
+		self.Content.Visible = true
+	end
 	local asset = ResolveIcon(collapsed and "chevron-right" or "chevron-down")
 	if asset and self.Arrow:IsA("ImageLabel") then
 		self.Arrow.Image = asset.Image
 		self.Arrow.ImageRectOffset = asset.Offset
 		self.Arrow.ImageRectSize = asset.Size
 	end
-	self:Refresh()
+	Tween(self.Arrow, {Rotation = collapsed and -90 or 0}, Motion.Base)
+	self:Refresh(true)
 end
 
-function Section:Refresh()
+function Section:Refresh(animated)
 	local headerHeight = self.Header.Size.Y.Offset
 	local contentHeight = self.Collapsed and 0 or (self.Layout.AbsoluteContentSize.Y + 10)
 	self.Content.Position = UDim2.fromOffset(0, headerHeight)
 	self.Content.Size = UDim2.new(1, 0, 0, contentHeight)
-	self.Instance.Size = UDim2.new(1, 0, 0, headerHeight + contentHeight)
+	local targetSize = UDim2.new(1, 0, 0, headerHeight + contentHeight)
+	if animated then
+		Tween(self.Instance, {Size = targetSize}, Motion.Base, Enum.EasingStyle.Quint, nil, function()
+			if self.Collapsed then
+				self.Content.Visible = false
+			end
+		end)
+	else
+		self.Instance.Size = targetSize
+	end
 	self.Tab:UpdateCanvas()
 end
 
@@ -968,7 +1009,7 @@ function Section:CreateButton(config)
 		AutoButtonColor = false,
 		Parent = self.Instance
 	})
-	Corner(button, 7)
+	Corner(button, 6)
 	self.Button = button
 	local iconOffset = self.Icon and 34 or 12
 	if self.Icon then
@@ -1004,11 +1045,17 @@ function Section:CreateButton(config)
 	Connect(self.Connections, button.MouseButton1Click, function()
 		self.Callback()
 	end)
+	Connect(self.Connections, button.MouseButton1Down, function()
+		Tween(button, {BackgroundColor3 = Google.Theme.PrimaryHover}, Motion.Fast)
+	end)
+	Connect(self.Connections, button.MouseButton1Up, function()
+		Tween(button, {BackgroundColor3 = Google.Theme.Primary}, Motion.Fast)
+	end)
 	Connect(self.Connections, button.MouseEnter, function()
-		Tween(button, {BackgroundColor3 = Google.Theme.PrimaryHover}, 0.12)
+		Tween(button, {BackgroundColor3 = Google.Theme.PrimaryHover}, Motion.Fast)
 	end)
 	Connect(self.Connections, button.MouseLeave, function()
-		Tween(button, {BackgroundColor3 = Google.Theme.Primary}, 0.12)
+		Tween(button, {BackgroundColor3 = Google.Theme.Primary}, Motion.Fast)
 	end)
 	function self:ApplyTheme()
 		self.Button.BackgroundColor3 = Google.Theme.Primary
@@ -1062,7 +1109,7 @@ function Section:CreateToggle(config)
 		AutoButtonColor = false,
 		Parent = self.Instance
 	})
-	Corner(switch, 12)
+	Corner(switch, 10)
 	self.Switch = switch
 	self.Knob = New("Frame", {
 		Size = UDim2.fromOffset(18, 18),
@@ -1074,8 +1121,8 @@ function Section:CreateToggle(config)
 	Corner(self.Knob, 9)
 	function self:Set(value)
 		self.Value = value and true or false
-		Tween(self.Switch, {BackgroundColor3 = self.Value and Google.Theme.Primary or Google.Theme.BorderStrong}, 0.14)
-		Tween(self.Knob, {Position = self.Value and UDim2.new(1, -20, 0.5, -9) or UDim2.fromOffset(2, 2)}, 0.14)
+		Tween(self.Switch, {BackgroundColor3 = self.Value and Google.Theme.Primary or Google.Theme.BorderStrong}, Motion.Base)
+		Tween(self.Knob, {Position = self.Value and UDim2.new(1, -20, 0.5, -9) or UDim2.fromOffset(2, 2)}, Motion.Base)
 		self.Callback(self.Value)
 	end
 	function self:Get()
@@ -1083,6 +1130,12 @@ function Section:CreateToggle(config)
 	end
 	Connect(self.Connections, switch.MouseButton1Click, function()
 		self:Set(not self.Value)
+	end)
+	Connect(self.Connections, switch.MouseEnter, function()
+		Tween(self.Knob, {Size = UDim2.fromOffset(20, 20)}, Motion.Fast)
+	end)
+	Connect(self.Connections, switch.MouseLeave, function()
+		Tween(self.Knob, {Size = UDim2.fromOffset(18, 18)}, Motion.Fast)
 	end)
 	Connect(self.Connections, self.Instance.InputBegan, function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -1179,8 +1232,9 @@ function Section:CreateSlider(config)
 			alpha = math.clamp((self.Value - self.Min) / (self.Max - self.Min), 0, 1)
 		end
 		self.ValueLabel.Text = tostring(self.Value)
-		self.Fill.Size = UDim2.fromScale(alpha, 1)
-		self.Knob.Position = UDim2.fromScale(alpha, 0.5)
+		local duration = self.Dragging and 0.05 or Motion.Base
+		Tween(self.Fill, {Size = UDim2.fromScale(alpha, 1)}, duration)
+		Tween(self.Knob, {Position = UDim2.fromScale(alpha, 0.5)}, duration)
 	end
 	function self:Set(value)
 		self.Value = round(math.clamp(value, self.Min, self.Max))
@@ -1252,7 +1306,7 @@ function Section:CreateDropdown(config)
 		AutoButtonColor = false,
 		Parent = self.Instance
 	})
-	Corner(self.Main, 7)
+	Corner(self.Main, 6)
 	self.MainStroke = Stroke(self.Main, Google.Theme.Border, 0.08, 1)
 	self.Label = New("TextLabel", {
 		Text = config.Name or "Dropdown",
@@ -1291,7 +1345,7 @@ function Section:CreateDropdown(config)
 		Visible = false,
 		Parent = self.Instance
 	})
-	Corner(self.Menu, 7)
+	Corner(self.Menu, 6)
 	self.MenuStroke = Stroke(self.Menu, Google.Theme.Border, 0.08, 1)
 	local searchOffset = 0
 	if self.Searchable then
@@ -1366,10 +1420,10 @@ function Section:CreateDropdown(config)
 				Parent = item
 			})
 			Connect(self.Connections, item.MouseEnter, function()
-				Tween(item, {BackgroundTransparency = 0}, 0.1)
+				Tween(item, {BackgroundTransparency = 0}, Motion.Fast)
 			end)
 			Connect(self.Connections, item.MouseLeave, function()
-				Tween(item, {BackgroundTransparency = 1}, 0.1)
+				Tween(item, {BackgroundTransparency = 1}, Motion.Fast)
 			end)
 			Connect(self.Connections, item.MouseButton1Click, function()
 				self:Select(option)
@@ -1390,13 +1444,15 @@ function Section:CreateDropdown(config)
 		self.Menu.Visible = true
 		local optionHeight = math.min(#self.Options * 30 + (self.Searchable and 40 or 6), 156)
 		self.Instance.Size = UDim2.new(1, 0, 0, 44 + optionHeight)
-		Tween(self.Menu, {Size = UDim2.new(1, 0, 0, optionHeight)}, 0.14)
+		Tween(self.Menu, {Size = UDim2.new(1, 0, 0, optionHeight)}, Motion.Base)
+		Tween(self.Arrow, {Rotation = 180}, Motion.Base)
 		self:RefreshSection()
 	end
 	function self:CloseMenu()
 		self.Open = false
 		self.Instance.Size = UDim2.new(1, 0, 0, 40)
-		Tween(self.Menu, {Size = UDim2.new(1, 0, 0, 0)}, 0.12, nil, nil, function()
+		Tween(self.Arrow, {Rotation = 0}, Motion.Base)
+		Tween(self.Menu, {Size = UDim2.new(1, 0, 0, 0)}, Motion.Fast, nil, nil, function()
 			self.Menu.Visible = false
 		end)
 		self:RefreshSection()
@@ -1438,6 +1494,14 @@ function Section:CreateDropdown(config)
 		end
 		self:RefreshOptions()
 	end
+	Connect(self.Connections, self.Main.MouseEnter, function()
+		self.MainStroke.Color = Google.Theme.Primary
+	end)
+	Connect(self.Connections, self.Main.MouseLeave, function()
+		if not self.Open then
+			self.MainStroke.Color = Google.Theme.Border
+		end
+	end)
 	Connect(self.Connections, self.Main.MouseButton1Click, function()
 		if self.Open then
 			self:CloseMenu()
@@ -1522,7 +1586,7 @@ function Section:CreateTextbox(config)
 		ClearTextOnFocus = false,
 		Parent = self.Instance
 	})
-	Corner(self.Entry, 7)
+	Corner(self.Entry, 6)
 	Padding(self.Entry, 10, 10, 0, 0)
 	self.EntryStroke = Stroke(self.Entry, Google.Theme.Border, 0.08, 1)
 	function self:Set(value)
@@ -1540,8 +1604,12 @@ function Section:CreateTextbox(config)
 	function self:Get()
 		return self.Value
 	end
+	Connect(self.Connections, self.Entry.Focused, function()
+		Tween(self.EntryStroke, {Color = Google.Theme.Primary, Transparency = 0}, Motion.Fast)
+	end)
 	Connect(self.Connections, self.Entry.FocusLost, function()
 		self:Set(self.Entry.Text)
+		Tween(self.EntryStroke, {Color = Google.Theme.Border, Transparency = 0.08}, Motion.Fast)
 	end)
 	function self:ApplyTheme()
 		self.Label.TextColor3 = Google.Theme.Text
@@ -1593,7 +1661,7 @@ function Section:CreateKeybind(config)
 		AutoButtonColor = false,
 		Parent = self.Instance
 	})
-	Corner(self.Button, 7)
+	Corner(self.Button, 6)
 	self.ButtonStroke = Stroke(self.Button, Google.Theme.Border, 0.08, 1)
 	function self:Set(keycode)
 		self.Value = keycode
@@ -1602,9 +1670,18 @@ function Section:CreateKeybind(config)
 	function self:Get()
 		return self.Value
 	end
+	Connect(self.Connections, self.Button.MouseEnter, function()
+		Tween(self.ButtonStroke, {Color = Google.Theme.Primary, Transparency = 0}, Motion.Fast)
+	end)
+	Connect(self.Connections, self.Button.MouseLeave, function()
+		if not self.Binding then
+			Tween(self.ButtonStroke, {Color = Google.Theme.Border, Transparency = 0.08}, Motion.Fast)
+		end
+	end)
 	Connect(self.Connections, self.Button.MouseButton1Click, function()
 		self.Binding = true
 		self.Button.Text = "..."
+		Tween(self.ButtonStroke, {Color = Google.Theme.Primary, Transparency = 0}, Motion.Fast)
 	end)
 	Connect(self.Connections, UserInputService.InputBegan, function(input, processed)
 		if processed then
@@ -1614,6 +1691,7 @@ function Section:CreateKeybind(config)
 			if input.UserInputType == Enum.UserInputType.Keyboard then
 				self:Set(input.KeyCode)
 				self.Binding = false
+				Tween(self.ButtonStroke, {Color = Google.Theme.Border, Transparency = 0.08}, Motion.Fast)
 			end
 			return
 		end
@@ -1687,7 +1765,7 @@ function Section:CreateColorPicker(config)
 		AutoButtonColor = false,
 		Parent = self.Instance
 	})
-	Corner(self.Button, 7)
+	Corner(self.Button, 6)
 	self.ButtonStroke = Stroke(self.Button, Google.Theme.Border, 0.08, 1)
 	self.Palette = New("Frame", {
 		Size = UDim2.new(1, 0, 0, 0),
@@ -1723,7 +1801,7 @@ function Section:CreateColorPicker(config)
 			AutoButtonColor = false,
 			Parent = self.Palette
 		})
-		Corner(swatch, 7)
+		Corner(swatch, 6)
 		Stroke(swatch, Google.Theme.Border, 0.12, 1)
 		Connect(self.Connections, swatch.MouseButton1Click, function()
 			self:Set(color)
@@ -1731,8 +1809,17 @@ function Section:CreateColorPicker(config)
 	end
 	local function togglePalette()
 		self.Open = not self.Open
-		self.Palette.Visible = self.Open
-		self.Instance.Size = UDim2.new(1, 0, 0, self.Open and 78 or 38)
+		if self.Open then
+			self.Palette.Visible = true
+			self.Palette.Size = UDim2.new(1, 0, 0, 0)
+			self.Instance.Size = UDim2.new(1, 0, 0, 78)
+			Tween(self.Palette, {Size = UDim2.new(1, 0, 0, 32)}, Motion.Base)
+		else
+			Tween(self.Palette, {Size = UDim2.new(1, 0, 0, 0)}, Motion.Fast, nil, nil, function()
+				self.Palette.Visible = false
+			end)
+			self.Instance.Size = UDim2.new(1, 0, 0, 38)
+		end
 		self:RefreshSection()
 	end
 	Connect(self.Connections, self.Button.MouseButton1Click, togglePalette)
@@ -1792,7 +1879,7 @@ function Section:CreateParagraph(config)
 	local self = Control(self, height, "Paragraph")
 	self.Instance.BackgroundTransparency = 0
 	self.Instance.BackgroundColor3 = Google.Theme.CardAlt
-	Corner(self.Instance, 7)
+	Corner(self.Instance, 6)
 	self.Stroke = Stroke(self.Instance, Google.Theme.Border, 0.1, 1)
 	if title then
 		self.TitleLabel = New("TextLabel", {
@@ -1923,7 +2010,7 @@ function Window:Minimize()
 	self.Minimized = true
 	self.Sidebar.Visible = false
 	self.PageWrap.Visible = false
-	Tween(self.Instance, {Size = UDim2.fromOffset(self.Instance.AbsoluteSize.X, 54)}, 0.18)
+	Tween(self.Instance, {Size = UDim2.fromOffset(self.Instance.AbsoluteSize.X, 54)}, Motion.Slow, Enum.EasingStyle.Quint)
 end
 
 function Window:Restore()
@@ -1931,7 +2018,7 @@ function Window:Restore()
 		return
 	end
 	self.Minimized = false
-	Tween(self.Instance, {Size = self.Size}, 0.18, nil, nil, function()
+	Tween(self.Instance, {Size = self.Size}, Motion.Slow, Enum.EasingStyle.Quint, nil, function()
 		self.Sidebar.Visible = true
 		self.PageWrap.Visible = true
 	end)
@@ -2031,7 +2118,7 @@ function NotificationManager:Update()
 	for i = #self.Items, 1, -1 do
 		local frame = self.Items[i]
 		if frame and frame.Parent then
-			Tween(frame, {Position = UDim2.new(1, -18, 1, -offset)}, 0.16)
+			Tween(frame, {Position = UDim2.new(1, -18, 1, -offset)}, Motion.Base)
 			offset = offset + frame.Size.Y.Offset + 8
 		end
 	end
@@ -2047,9 +2134,10 @@ function NotificationManager:Push(config)
 		Position = UDim2.new(1, 310, 1, -18),
 		BackgroundColor3 = Google.Theme.Card,
 		BorderSizePixel = 0,
+		ClipsDescendants = true,
 		Parent = self.Holder
 	})
-	Corner(frame, 9)
+	Corner(frame, 7)
 	Stroke(frame, Google.Theme.Border, 0.05, 1)
 	local iconWrap = New("Frame", {
 		Size = UDim2.fromOffset(34, 34),
@@ -2058,7 +2146,7 @@ function NotificationManager:Push(config)
 		BorderSizePixel = 0,
 		Parent = frame
 	})
-	Corner(iconWrap, 8)
+	Corner(iconWrap, 6)
 	Google.CreateIcon(config.Icon or "info", 18, config.IconColor or Google.Theme.Primary, iconWrap, {
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.5)
@@ -2087,8 +2175,8 @@ function NotificationManager:Push(config)
 		Parent = frame
 	})
 	local progress = New("Frame", {
-		Size = UDim2.new(1, 0, 0, 2),
-		Position = UDim2.new(0, 0, 1, -2),
+		Size = UDim2.new(1, -14, 0, 2),
+		Position = UDim2.new(0, 7, 1, -5),
 		BackgroundColor3 = Google.Theme.Primary,
 		BorderSizePixel = 0,
 		Parent = frame
@@ -2096,11 +2184,11 @@ function NotificationManager:Push(config)
 	Corner(progress, 2)
 	table.insert(self.Items, frame)
 	self:Update()
-	Tween(frame, {Position = UDim2.new(1, -18, 1, -18)}, 0.2)
+	Tween(frame, {Position = UDim2.new(1, -18, 1, -18)}, Motion.Slow, Enum.EasingStyle.Quint)
 	Tween(progress, {Size = UDim2.new(0, 0, 0, 2)}, duration, Enum.EasingStyle.Linear)
 	coroutine.wrap(function()
 		wait(duration)
-		Tween(frame, {Position = UDim2.new(1, 310, frame.Position.Y.Scale, frame.Position.Y.Offset), BackgroundTransparency = 1}, 0.2, nil, nil, function()
+		Tween(frame, {Position = UDim2.new(1, 310, frame.Position.Y.Scale, frame.Position.Y.Offset), BackgroundTransparency = 1}, Motion.Slow, Enum.EasingStyle.Quint, nil, function()
 			for i, item in ipairs(self.Items) do
 				if item == frame then
 					table.remove(self.Items, i)
