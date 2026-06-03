@@ -22,6 +22,31 @@ local function SafeParent()
 	return CoreGui
 end
 
+
+local function CleanupExistingInterfaces(primaryParent)
+	local targets = {}
+	local function add(parent)
+		if parent and not targets[parent] then
+			targets[parent] = true
+		end
+	end
+	add(primaryParent)
+	add(CoreGui)
+	if LocalPlayer then
+		add(LocalPlayer:FindFirstChildOfClass("PlayerGui"))
+	end
+	for parent in pairs(targets) do
+		for _, child in ipairs(parent:GetChildren()) do
+			local name = child.Name
+			if child:IsA("ScreenGui") and (name == "GoogleUI" or name == "GoogleNotifications" or string.sub(name, 1, 13) == "GoogleWindow_") then
+				pcall(function()
+					child:Destroy()
+				end)
+			end
+		end
+	end
+end
+
 local function New(className, properties)
 	local object = Instance.new(className)
 	if properties then
@@ -374,12 +399,17 @@ function Google:CreateWindow(config)
 	self.Visible = true
 	self.NotifySide = config.NotifySide or "Right"
 
+	local parent = config.Parent or SafeParent()
+	if config.AllowMultiple ~= true then
+		CleanupExistingInterfaces(parent)
+	end
+
 	local gui = New("ScreenGui", {
 		Name = "GoogleUI",
 		IgnoreGuiInset = true,
 		ResetOnSpawn = false,
 		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-		Parent = config.Parent or SafeParent()
+		Parent = parent
 	})
 	self.Gui = gui
 
@@ -390,7 +420,7 @@ function Google:CreateWindow(config)
 		Position = self.Position or UDim2.fromScale(0.5, 0.5),
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
-		ClipsDescendants = false,
+		ClipsDescendants = true,
 		Parent = gui
 	})
 	self.Instance = main
