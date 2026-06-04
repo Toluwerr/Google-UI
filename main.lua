@@ -979,6 +979,200 @@ function Tab:AddSection(config)
 	return self:CreateSection(config)
 end
 
+function Tab:GetStandaloneSection()
+	if self.StandaloneSection then
+		return self.StandaloneSection
+	end
+	local section = setmetatable({}, Section)
+	section.Tab = self
+	section.Name = "StandaloneComponents"
+	section.Description = ""
+	section.Icon = nil
+	section.Controls = {}
+	section.Connections = {}
+	section.Collapsed = false
+	section.Standalone = true
+	local frame = New("Frame", {
+		Name = "StandaloneComponents",
+		Size = UDim2.new(1, 0, 0, 0),
+		BackgroundColor3 = Google.Theme.Card,
+		BorderSizePixel = 0,
+		ClipsDescendants = true,
+		LayoutOrder = -1000,
+		Parent = self.Page
+	})
+	Corner(frame, 10)
+	section.Instance = frame
+	section.Stroke = Stroke(frame, Google.Theme.Border, 0.05, 1)
+	local content = New("Frame", {
+		Name = "Content",
+		Position = UDim2.fromOffset(0, 0),
+		Size = UDim2.new(1, 0, 0, 0),
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		Parent = frame
+	})
+	Padding(content, 10, 10, 10, 10)
+	section.Content = content
+	section.Layout = New("UIListLayout", {
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Padding = UDim.new(0, 7),
+		Parent = content
+	})
+	function section:Refresh(animated)
+		local contentHeight = self.Layout.AbsoluteContentSize.Y + 20
+		self.Content.Position = UDim2.fromOffset(0, 0)
+		self.Content.Size = UDim2.new(1, 0, 0, contentHeight)
+		local targetSize = UDim2.new(1, 0, 0, contentHeight)
+		if animated then
+			Tween(self.Instance, {Size = targetSize}, Motion.Base)
+		else
+			self.Instance.Size = targetSize
+		end
+		self.Tab:UpdateCanvas()
+	end
+	function section:ApplyTheme()
+		self.Instance.BackgroundColor3 = Google.Theme.Card
+		self.Stroke.Color = Google.Theme.Border
+		for _, control in ipairs(self.Controls) do
+			if control.ApplyTheme then
+				control:ApplyTheme()
+			end
+		end
+	end
+	Connect(section.Connections, section.Layout:GetPropertyChangedSignal("AbsoluteContentSize"), function()
+		section:Refresh()
+	end)
+	self.StandaloneSection = section
+	table.insert(self.Sections, section)
+	section:Refresh()
+	return section
+end
+
+function Tab:CreateButton(config)
+	return self:GetStandaloneSection():CreateButton(config)
+end
+
+function Tab:AddButton(config)
+	return self:GetStandaloneSection():CreateButton(config)
+end
+
+function Tab:CreateToggle(config)
+	return self:GetStandaloneSection():CreateToggle(config)
+end
+
+function Tab:AddToggle(index, config)
+	local section = self:GetStandaloneSection()
+	if type(index) == "table" then
+		return section:CreateToggle(index)
+	end
+	config = config or {}
+	config.Name = config.Name or config.Text or index
+	return section:CreateToggle(config)
+end
+
+function Tab:CreateSlider(config)
+	return self:GetStandaloneSection():CreateSlider(config)
+end
+
+function Tab:AddSlider(index, config)
+	local section = self:GetStandaloneSection()
+	if type(index) == "table" then
+		return section:CreateSlider(index)
+	end
+	config = config or {}
+	config.Name = config.Name or config.Text or index
+	return section:CreateSlider(config)
+end
+
+function Tab:CreateDropdown(config)
+	return self:GetStandaloneSection():CreateDropdown(config)
+end
+
+function Tab:AddDropdown(index, config)
+	local section = self:GetStandaloneSection()
+	if type(index) == "table" then
+		return section:CreateDropdown(index)
+	end
+	config = config or {}
+	config.Name = config.Name or config.Text or index
+	return section:CreateDropdown(config)
+end
+
+function Tab:CreateTextbox(config)
+	return self:GetStandaloneSection():CreateTextbox(config)
+end
+
+function Tab:AddTextbox(index, config)
+	local section = self:GetStandaloneSection()
+	if type(index) == "table" then
+		return section:CreateTextbox(index)
+	end
+	config = config or {}
+	config.Name = config.Name or config.Text or index
+	return section:CreateTextbox(config)
+end
+
+function Tab:CreateKeybind(config)
+	return self:GetStandaloneSection():CreateKeybind(config)
+end
+
+function Tab:AddKeybind(index, config)
+	local section = self:GetStandaloneSection()
+	if type(index) == "table" then
+		return section:CreateKeybind(index)
+	end
+	config = config or {}
+	config.Name = config.Name or config.Text or index
+	return section:CreateKeybind(config)
+end
+
+function Tab:CreateColorPicker(config)
+	return self:GetStandaloneSection():CreateColorPicker(config)
+end
+
+function Tab:AddColorPicker(index, config)
+	local section = self:GetStandaloneSection()
+	if type(index) == "table" then
+		return section:CreateColorPicker(index)
+	end
+	config = config or {}
+	config.Name = config.Name or config.Text or config.Title or index
+	return section:CreateColorPicker(config)
+end
+
+function Tab:CreateLabel(config)
+	return self:GetStandaloneSection():CreateLabel(config)
+end
+
+function Tab:AddLabel(config)
+	return self:GetStandaloneSection():CreateLabel(config)
+end
+
+function Tab:CreateParagraph(config)
+	return self:GetStandaloneSection():CreateParagraph(config)
+end
+
+function Tab:AddParagraph(config)
+	return self:GetStandaloneSection():CreateParagraph(config)
+end
+
+function Tab:CreateImage(config)
+	return self:GetStandaloneSection():CreateImage(config)
+end
+
+function Tab:AddImage(config)
+	return self:GetStandaloneSection():CreateImage(config)
+end
+
+function Tab:CreateDivider(config)
+	return self:GetStandaloneSection():CreateDivider(config)
+end
+
+function Tab:AddDivider(config)
+	return self:GetStandaloneSection():CreateDivider(config)
+end
+
 function Tab:UpdateCanvas()
 	self.Page.CanvasSize = UDim2.fromOffset(0, self.Layout.AbsoluteContentSize.Y + 28)
 end
