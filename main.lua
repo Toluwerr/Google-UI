@@ -139,6 +139,22 @@ local function IsColor(value)
 	return typeof(value) == "Color3"
 end
 
+local function ResolveImageSource(value)
+	if typeof(value) == "number" then
+		return "rbxassetid://" .. tostring(value)
+	end
+
+	if type(value) ~= "string" then
+		return ""
+	end
+
+	if value:match("^%d+$") then
+		return "rbxassetid://" .. value
+	end
+
+	return value
+end
+
 local function Blend(colorA, colorB, alpha)
 	return colorA:Lerp(colorB, alpha)
 end
@@ -1983,7 +1999,7 @@ function Section:CreateImage(config)
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		ScaleType = config.ScaleType or Enum.ScaleType.Fit,
-		Image = config.Image or config.ImageId or config.Source or "",
+		Image = ResolveImageSource(config.Image or config.ImageId or config.Source or config.AssetId or config.Id),
 		Parent = self.ImageFrame
 	})
 	self.Placeholder = New("TextLabel", {
@@ -1997,7 +2013,7 @@ function Section:CreateImage(config)
 		Parent = self.ImageFrame
 	})
 	function self:Set(source)
-		self.Image.Image = tostring(source or "")
+		self.Image.Image = ResolveImageSource(source)
 		self.Placeholder.Visible = self.Image.Image == ""
 	end
 	function self:Get()
