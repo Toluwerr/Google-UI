@@ -1918,6 +1918,129 @@ function Section:AddParagraph(config)
 	return self:CreateParagraph(config)
 end
 
+
+function Section:CreateImage(config)
+	config = config or {}
+	local title = config.Title or config.Name
+	local description = config.Description or config.Caption or config.Text
+	local imageHeight = tonumber(config.Height) or tonumber(config.ImageHeight) or 180
+	imageHeight = math.max(48, imageHeight)
+	local topOffset = 10
+	local height = imageHeight + 20
+	if title then
+		height = height + 22
+		topOffset = topOffset + 22
+	end
+	if description then
+		height = height + 18
+		topOffset = topOffset + 18
+	end
+	local self = Control(self, height, "Image")
+	self.Instance.BackgroundTransparency = 0
+	self.Instance.BackgroundColor3 = Google.Theme.CardAlt
+	self.Instance.ClipsDescendants = true
+	Corner(self.Instance, 10)
+	self.Stroke = Stroke(self.Instance, Google.Theme.Border, 0.1, 1)
+	if title then
+		self.TitleLabel = New("TextLabel", {
+			Text = title,
+			Font = Enum.Font.GothamBold,
+			TextSize = 13,
+			TextColor3 = Google.Theme.Text,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			BackgroundTransparency = 1,
+			Size = UDim2.new(1, -20, 0, 18),
+			Position = UDim2.fromOffset(10, 10),
+			Parent = self.Instance
+		})
+	end
+	if description then
+		self.DescriptionLabel = New("TextLabel", {
+			Text = description,
+			Font = Enum.Font.Gotham,
+			TextSize = 12,
+			TextColor3 = Google.Theme.Muted,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			BackgroundTransparency = 1,
+			Size = UDim2.new(1, -20, 0, 16),
+			Position = UDim2.fromOffset(10, title and 31 or 10),
+			Parent = self.Instance
+		})
+	end
+	self.ImageFrame = New("Frame", {
+		Size = UDim2.new(1, -20, 0, imageHeight),
+		Position = UDim2.fromOffset(10, topOffset),
+		BackgroundColor3 = config.BackgroundColor or Google.Theme.Input,
+		BorderSizePixel = 0,
+		ClipsDescendants = true,
+		Parent = self.Instance
+	})
+	Corner(self.ImageFrame, tonumber(config.ImageCornerRadius) or tonumber(config.CornerRadius) or 8)
+	self.ImageStroke = Stroke(self.ImageFrame, Google.Theme.Border, 0.08, 1)
+	self.Image = New("ImageLabel", {
+		Name = "Image",
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		ScaleType = config.ScaleType or Enum.ScaleType.Fit,
+		Image = config.Image or config.ImageId or config.Source or "",
+		Parent = self.ImageFrame
+	})
+	self.Placeholder = New("TextLabel", {
+		Text = config.Placeholder or "Image",
+		Font = Enum.Font.Gotham,
+		TextSize = 12,
+		TextColor3 = Google.Theme.Subtle,
+		BackgroundTransparency = 1,
+		Size = UDim2.fromScale(1, 1),
+		Visible = self.Image.Image == "",
+		Parent = self.ImageFrame
+	})
+	function self:Set(source)
+		self.Image.Image = tostring(source or "")
+		self.Placeholder.Visible = self.Image.Image == ""
+	end
+	function self:Get()
+		return self.Image.Image
+	end
+	function self:SetScaleType(scaleType)
+		if typeof(scaleType) == "EnumItem" then
+			self.Image.ScaleType = scaleType
+		elseif type(scaleType) == "string" then
+			local normalized = string.lower(scaleType)
+			if normalized == "crop" then
+				self.Image.ScaleType = Enum.ScaleType.Crop
+			elseif normalized == "stretch" then
+				self.Image.ScaleType = Enum.ScaleType.Stretch
+			elseif normalized == "tile" then
+				self.Image.ScaleType = Enum.ScaleType.Tile
+			else
+				self.Image.ScaleType = Enum.ScaleType.Fit
+			end
+		end
+		return self.Image.ScaleType
+	end
+	function self:ApplyTheme()
+		self.Instance.BackgroundColor3 = Google.Theme.CardAlt
+		self.Stroke.Color = Google.Theme.Border
+		self.ImageFrame.BackgroundColor3 = config.BackgroundColor or Google.Theme.Input
+		self.ImageStroke.Color = Google.Theme.Border
+		if self.TitleLabel then
+			self.TitleLabel.TextColor3 = Google.Theme.Text
+		end
+		if self.DescriptionLabel then
+			self.DescriptionLabel.TextColor3 = Google.Theme.Muted
+		end
+		self.Placeholder.TextColor3 = Google.Theme.Subtle
+	end
+	self:RefreshSection()
+	return self
+end
+
+function Section:AddImage(config)
+	return self:CreateImage(config)
+end
+
 function Section:CreateDivider(config)
 	config = config or {}
 	if type(config) == "string" then
