@@ -254,6 +254,47 @@ local function ResolveMobileWindowSize(config)
 	return UDim2.fromOffset(width, height)
 end
 
+local IntroState = {
+	Played = false,
+	Url = "https://raw.githubusercontent.com/Toluwerr/Google-UI/refs/heads/main/intro.lua",
+	Duration = 2.65,
+	Fade = 0.28,
+	Buffer = 0.08
+}
+
+local function WaitSeconds(seconds)
+	local finish = os.clock() + math.max(0, seconds or 0)
+	while os.clock() < finish do
+		RunService.Heartbeat:Wait()
+	end
+end
+
+local function RunStartupIntro()
+	if IntroState.Played then
+		return
+	end
+	IntroState.Played = true
+	local started = os.clock()
+	local played = false
+	local ok, err = pcall(function()
+		local source = game:HttpGet(IntroState.Url)
+		local fn = loadstring(source)
+		if type(fn) == "function" then
+			played = true
+			fn()
+		end
+	end)
+	if played then
+		local target = IntroState.Duration + IntroState.Fade + IntroState.Buffer
+		local remaining = target - (os.clock() - started)
+		if remaining > 0 then
+			WaitSeconds(remaining)
+		end
+	elseif not ok then
+		warn("Google UI intro failed: " .. tostring(err))
+	end
+end
+
 local function Blend(colorA, colorB, alpha)
 	return colorA:Lerp(colorB, alpha)
 end
@@ -540,6 +581,7 @@ function Google:CreateWindow(config)
 	if config.AllowMultiple ~= true then
 		CleanupExistingInterfaces(parent)
 	end
+	RunStartupIntro()
 
 	local gui = New("ScreenGui", {
 		Name = "GoogleUI",
