@@ -1,4 +1,3 @@
-local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
 local SETTINGS = {
@@ -7,9 +6,10 @@ local SETTINGS = {
 	LogoSize = 82,
 	CornerRadius = 28,
 	Duration = 2.65,
-	SpinTurns = 1.35,
+	SpinTurns = 1,
 	Loop = false,
 	FadeOut = true,
+	ReturnToOriginal = true,
 	BackgroundDim = false,
 	CustomImage = ""
 }
@@ -341,12 +341,23 @@ connection = RunService.RenderStepped:Connect(function()
 		local p = math.clamp(elapsed / SETTINGS.Duration, 0, 1)
 		local intro = easeOutBack(range(elapsed, 0, 0.42))
 		local spin = easeInOutCubic(p)
+		local rotation = spin * 360 * SETTINGS.SpinTurns
 
-		spinRoot.Rotation = spin * 360 * SETTINGS.SpinTurns
+		if SETTINGS.ReturnToOriginal and p >= 0.999 then
+			rotation = 0
+		end
+
+		spinRoot.Rotation = rotation
 		scale.Scale = 0.72 + (0.28 * intro)
 		center.Position = UDim2.fromScale(0.5, 0.5 + ((1 - easeOutCubic(range(elapsed, 0, 0.48))) * 0.018))
 
 		if p >= 1 then
+			if SETTINGS.ReturnToOriginal then
+				spinRoot.Rotation = 0
+				center.Position = UDim2.fromScale(0.5, 0.5)
+				scale.Scale = 1
+			end
+
 			if SETTINGS.FadeOut then
 				exiting = true
 				fadeStart = os.clock()
