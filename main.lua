@@ -1,12 +1,11 @@
 local Google = {}
 Google.__index = Google
 
-local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
+local Workspace = game:GetService("Workspace")
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -257,10 +256,13 @@ end
 
 local IntroState = {
 	Played = false,
+	Name = "GoogleGSpinningContainer",
 	Url = "https://raw.githubusercontent.com/Toluwerr/Google-UI/refs/heads/main/intro.lua",
 	Duration = 2.65,
 	Fade = 0.28,
-	Buffer = 0.08
+	Buffer = 0.16,
+	PostDelay = 1.35,
+	MaxWait = 6.25
 }
 
 local function WaitSeconds(seconds)
@@ -268,6 +270,40 @@ local function WaitSeconds(seconds)
 	while os.clock() < finish do
 		RunService.Heartbeat:Wait()
 	end
+end
+
+local function FindIntroGui()
+	local targets = {}
+	local function add(parent)
+		if parent and not targets[parent] then
+			targets[parent] = true
+		end
+	end
+	add(SafeParent())
+	add(CoreGui)
+	if LocalPlayer then
+		add(LocalPlayer:FindFirstChildOfClass("PlayerGui"))
+	end
+	for parent in pairs(targets) do
+		local gui = parent:FindFirstChild(IntroState.Name)
+		if gui then
+			return gui
+		end
+	end
+	return nil
+end
+
+local function WaitForIntroCompletion(started)
+	local minimumFinish = started + IntroState.Duration + IntroState.Fade + IntroState.Buffer
+	local hardFinish = started + IntroState.MaxWait
+	while os.clock() < hardFinish do
+		local now = os.clock()
+		if now >= minimumFinish and not FindIntroGui() then
+			break
+		end
+		RunService.Heartbeat:Wait()
+	end
+	WaitSeconds(IntroState.PostDelay)
 end
 
 local function RunStartupIntro()
@@ -286,11 +322,7 @@ local function RunStartupIntro()
 		end
 	end)
 	if played then
-		local target = IntroState.Duration + IntroState.Fade + IntroState.Buffer
-		local remaining = target - (os.clock() - started)
-		if remaining > 0 then
-			WaitSeconds(remaining)
-		end
+		WaitForIntroCompletion(started)
 	elseif not ok then
 		warn("Google UI intro failed: " .. tostring(err))
 	end
@@ -614,9 +646,9 @@ function Google:CreateWindow(config)
 		ZIndex = 2,
 		Parent = main
 	})
-	Corner(body, 18)
+	self.BodyCorner = Corner(body, 20)
 	self.Body = body
-	self.MainStroke = Stroke(body, Google.Theme.Border, 0.05, 1)
+	self.MainStroke = Stroke(body, Google.Theme.Border, 1, 1)
 
 	local topbar = New("Frame", {
 		Name = "Topbar",
@@ -626,7 +658,7 @@ function Google:CreateWindow(config)
 		Parent = body
 	})
 	self.Topbar = topbar
-	Corner(topbar, 18)
+	self.TopbarCorner = Corner(topbar, 0)
 
 	local topbarLine = New("Frame", {
 		Name = "TopbarLine",
@@ -1467,7 +1499,7 @@ function Section:CreateToggle(config)
 		TextColor3 = Google.Theme.Text,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		BackgroundTransparency = 1,
-		Size = UDim2.new(1, -64, 0, 18),
+		Size = UDim2.new(1, -76, 0, 18),
 		Position = UDim2.fromOffset(0, config.Description and 5 or 9),
 		Parent = self.Instance
 	})
@@ -1479,34 +1511,58 @@ function Section:CreateToggle(config)
 			TextColor3 = Google.Theme.Muted,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			BackgroundTransparency = 1,
-			Size = UDim2.new(1, -64, 0, 16),
+			Size = UDim2.new(1, -76, 0, 16),
 			Position = UDim2.fromOffset(0, 25),
 			Parent = self.Instance
 		})
 	end
 	local switch = New("TextButton", {
 		Text = "",
-		Size = UDim2.fromOffset(40, 22),
-		Position = UDim2.new(1, -40, 0.5, -11),
+		Size = UDim2.fromOffset(48, 26),
+		Position = UDim2.new(1, -48, 0.5, -13),
 		BackgroundColor3 = self.Value and Google.Theme.Primary or Google.Theme.BorderStrong,
 		BorderSizePixel = 0,
 		AutoButtonColor = false,
+		ClipsDescendants = true,
 		Parent = self.Instance
 	})
-	Corner(switch, 10)
+	Corner(switch, 13)
 	self.Switch = switch
+	self.SwitchStroke = Stroke(switch, self.Value and Google.Theme.PrimaryHover or Google.Theme.BorderStrong, 0.2, 1)
+	self.SwitchStroke.Name = "ToggleStroke"
+	self.SwitchGradient = New("UIGradient", {
+		Name = "EnhancedGradient",
+		Rotation = 0,
+		Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, self.Value and Blend(Google.Theme.Primary, Color3.new(1, 1, 1), 0.14) or Blend(Google.Theme.BorderStrong, Color3.new(1, 1, 1), 0.1)),
+			ColorSequenceKeypoint.new(1, self.Value and Google.Theme.Primary or Google.Theme.BorderStrong)
+		}),
+		Parent = switch
+	})
 	self.Knob = New("Frame", {
-		Size = UDim2.fromOffset(18, 18),
-		Position = self.Value and UDim2.new(1, -20, 0.5, -9) or UDim2.fromOffset(2, 2),
+		Size = UDim2.fromOffset(22, 22),
+		Position = self.Value and UDim2.new(1, -24, 0.5, -11) or UDim2.fromOffset(2, 2),
 		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 		BorderSizePixel = 0,
 		Parent = switch
 	})
-	Corner(self.Knob, 9)
+	Corner(self.Knob, 11)
+	self.KnobStroke = Stroke(self.Knob, Blend(Google.Theme.Border, Color3.new(1, 1, 1), 0.45), 0.15, 1)
+	self.KnobStroke.Name = "KnobStroke"
 	function self:Set(value)
 		self.Value = value and true or false
-		Tween(self.Switch, {BackgroundColor3 = self.Value and Google.Theme.Primary or Google.Theme.BorderStrong}, Motion.Base)
-		Tween(self.Knob, {Position = self.Value and UDim2.new(1, -20, 0.5, -9) or UDim2.fromOffset(2, 2)}, Motion.Base)
+		local base = self.Value and Google.Theme.Primary or Google.Theme.BorderStrong
+		Tween(self.Switch, {BackgroundColor3 = base}, Motion.Base)
+		Tween(self.Knob, {Position = self.Value and UDim2.new(1, -24, 0.5, -11) or UDim2.fromOffset(2, 2)}, Motion.Base)
+		if self.SwitchStroke then
+			Tween(self.SwitchStroke, {Color = self.Value and Google.Theme.PrimaryHover or Google.Theme.BorderStrong, Transparency = self.Value and 0.08 or 0.22}, Motion.Base)
+		end
+		if self.SwitchGradient then
+			self.SwitchGradient.Color = ColorSequence.new({
+				ColorSequenceKeypoint.new(0, self.Value and Blend(Google.Theme.Primary, Color3.new(1, 1, 1), 0.14) or Blend(Google.Theme.BorderStrong, Color3.new(1, 1, 1), 0.1)),
+				ColorSequenceKeypoint.new(1, base)
+			})
+		end
 		self.Callback(self.Value)
 	end
 	function self:Get()
@@ -1526,6 +1582,12 @@ function Section:CreateToggle(config)
 			self.DescriptionLabel.TextColor3 = Google.Theme.Muted
 		end
 		self.Switch.BackgroundColor3 = self.Value and Google.Theme.Primary or Google.Theme.BorderStrong
+		if self.SwitchStroke then
+			self.SwitchStroke.Color = self.Value and Google.Theme.PrimaryHover or Google.Theme.BorderStrong
+		end
+		if self.KnobStroke then
+			self.KnobStroke.Color = Blend(Google.Theme.Border, Color3.new(1, 1, 1), 0.45)
+		end
 	end
 	self:RefreshSection()
 	return self
@@ -1542,7 +1604,7 @@ end
 
 function Section:CreateSlider(config)
 	config = config or {}
-	local self = Control(self, 56, "Slider")
+	local self = Control(self, 60, "Slider")
 	self.Min = config.Min or config.Minimum or 0
 	self.Max = config.Max or config.Maximum or 100
 	self.Value = config.Default or self.Min
@@ -1572,30 +1634,54 @@ function Section:CreateSlider(config)
 		Parent = self.Instance
 	})
 	self.Track = New("Frame", {
-		Size = UDim2.new(1, 0, 0, 6),
-		Position = UDim2.fromOffset(0, 34),
+		Size = UDim2.new(1, 0, 0, 8),
+		Position = UDim2.fromOffset(0, 36),
 		BackgroundColor3 = Google.Theme.Border,
 		BorderSizePixel = 0,
+		ClipsDescendants = false,
 		Parent = self.Instance
 	})
-	Corner(self.Track, 6)
+	Corner(self.Track, 8)
+	self.TrackStroke = Stroke(self.Track, Google.Theme.BorderStrong, 0.65, 1)
+	self.TrackStroke.Name = "SliderTrackStroke"
 	self.Fill = New("Frame", {
 		Size = UDim2.fromScale(0, 1),
 		BackgroundColor3 = Google.Theme.Primary,
 		BorderSizePixel = 0,
+		ZIndex = 2,
 		Parent = self.Track
 	})
-	Corner(self.Fill, 6)
+	Corner(self.Fill, 8)
+	self.FillGradient = New("UIGradient", {
+		Name = "EnhancedGradient",
+		Rotation = 0,
+		Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Google.Theme.Primary),
+			ColorSequenceKeypoint.new(1, Blend(Google.Theme.Primary, Color3.new(1, 1, 1), 0.16))
+		}),
+		Parent = self.Fill
+	})
 	self.Knob = New("Frame", {
-		Size = UDim2.fromOffset(14, 14),
+		Size = UDim2.fromOffset(20, 20),
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0, 0.5),
-		BackgroundColor3 = Google.Theme.Primary,
+		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 		BorderSizePixel = 0,
+		ZIndex = 3,
 		Parent = self.Track
 	})
-	Corner(self.Knob, 7)
-	self.KnobStroke = Stroke(self.Knob, Google.Theme.Card, 0, 2)
+	Corner(self.Knob, 10)
+	self.KnobStroke = Stroke(self.Knob, Google.Theme.Primary, 0.05, 2)
+	self.KnobDot = New("Frame", {
+		Size = UDim2.fromOffset(8, 8),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		BackgroundColor3 = Google.Theme.Primary,
+		BorderSizePixel = 0,
+		ZIndex = 4,
+		Parent = self.Knob
+	})
+	Corner(self.KnobDot, 4)
 	local function round(value)
 		local precision = self.Precision
 		if precision <= 0 then
@@ -1647,8 +1733,20 @@ function Section:CreateSlider(config)
 		self.ValueLabel.TextColor3 = Google.Theme.Primary
 		self.Track.BackgroundColor3 = Google.Theme.Border
 		self.Fill.BackgroundColor3 = Google.Theme.Primary
-		self.Knob.BackgroundColor3 = Google.Theme.Primary
-		self.KnobStroke.Color = Google.Theme.Card
+		if self.FillGradient then
+			self.FillGradient.Color = ColorSequence.new({
+				ColorSequenceKeypoint.new(0, Google.Theme.Primary),
+				ColorSequenceKeypoint.new(1, Blend(Google.Theme.Primary, Color3.new(1, 1, 1), 0.16))
+			})
+		end
+		self.Knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		self.KnobStroke.Color = Google.Theme.Primary
+		if self.KnobDot then
+			self.KnobDot.BackgroundColor3 = Google.Theme.Primary
+		end
+		if self.TrackStroke then
+			self.TrackStroke.Color = Google.Theme.BorderStrong
+		end
 	end
 	self:UpdateVisual()
 	self:RefreshSection()
@@ -2607,6 +2705,7 @@ function Window:ApplyTheme()
 	self.Instance.BackgroundTransparency = 1
 	self.Body.BackgroundColor3 = theme.Window
 	self.MainStroke.Color = theme.Border
+	self.MainStroke.Transparency = 1
 	self.Topbar.BackgroundColor3 = theme.Topbar
 	self.TopbarLine.BackgroundColor3 = theme.Border
 	self.Sidebar.BackgroundColor3 = theme.Sidebar
@@ -3320,11 +3419,11 @@ function Section:CreateToggle(config)
 	control.Disabled = config.Disabled or false
 	UseCallbackGuard(control)
 	if control.Switch then
-		control.SwitchStroke = EnsureStroke(control.Switch, "ToggleStroke", Google.Theme.BorderStrong, 0.18, 1)
+		control.SwitchStroke = EnsureStroke(control.Switch, "ToggleStroke", Google.Theme.BorderStrong, 0.22, 1)
 		control.SwitchGradient = EnsureGradient(control.Switch, control.Value and Google.Theme.Primary or Google.Theme.BorderStrong, control.Value and Blend(Google.Theme.Primary, Color3.new(1, 1, 1), 0.12) or Google.Theme.Border, 0)
 	end
 	if control.Knob then
-		control.KnobStroke = EnsureStroke(control.Knob, "KnobStroke", Google.Theme.Card, 0, 2)
+		control.KnobStroke = EnsureStroke(control.Knob, "KnobStroke", Blend(Google.Theme.Border, Color3.new(1, 1, 1), 0.45), 0.12, 1)
 	end
 	local originalSet = control.Set
 	function control:Set(value)
@@ -3370,7 +3469,7 @@ function Section:CreateToggle(config)
 			self.SwitchStroke.Color = self.Value and Google.Theme.PrimaryHover or Google.Theme.BorderStrong
 		end
 		if self.KnobStroke then
-			self.KnobStroke.Color = Google.Theme.Card
+			self.KnobStroke.Color = Blend(Google.Theme.Border, Color3.new(1, 1, 1), 0.45)
 		end
 		if self.SwitchGradient then
 			local base = self.Value and Google.Theme.Primary or Google.Theme.BorderStrong
@@ -3411,12 +3510,12 @@ function Section:CreateSlider(config)
 			Parent = control.Instance
 		})
 		if control.Track then
-			control.Track.Position = UDim2.fromOffset(0, 52)
+			control.Track.Position = UDim2.fromOffset(0, 54)
 		end
 	end
 	if control.Track then
 		control.Track.BackgroundTransparency = 0.05
-		control.TrackStroke = EnsureStroke(control.Track, "SliderTrackStroke", Google.Theme.BorderStrong, 0.55, 1)
+		control.TrackStroke = EnsureStroke(control.Track, "SliderTrackStroke", Google.Theme.BorderStrong, 0.68, 1)
 	end
 	if control.Fill then
 		control.FillGradient = EnsureGradient(control.Fill, Google.Theme.Primary, Blend(Google.Theme.Primary, Color3.new(1, 1, 1), 0.18), 0)
