@@ -1,12 +1,19 @@
 local Google = {}
 Google.__index = Google
 
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-local Players = game:GetService("Players")
-local CoreGui = game:GetService("CoreGui")
-local Workspace = game:GetService("Workspace")
-local RunService = game:GetService("RunService")
+local Services = setmetatable({}, {
+	__index = function(self, name)
+		local service = game:GetService(name)
+		rawset(self, name, service)
+		return service
+	end
+})
+
+local TweenService = Services.TweenService
+local UserInputService = Services.UserInputService
+local Players = Services.Players
+local CoreGui = Services.CoreGui
+local Workspace = Services.Workspace
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -23,7 +30,6 @@ local function SafeParent()
 	end
 	return CoreGui
 end
-
 
 local function CleanupExistingInterfaces(primaryParent)
 	local targets = {}
@@ -49,7 +55,7 @@ local function CleanupExistingInterfaces(primaryParent)
 	end
 end
 
-local function New(className, properties)
+local function create(className, properties)
 	local object = Instance.new(className)
 	if properties then
 		for property, value in pairs(properties) do
@@ -60,7 +66,7 @@ local function New(className, properties)
 end
 
 local function Corner(parent, radius)
-	local corner = New("UICorner", {
+	local corner = create("UICorner", {
 		CornerRadius = UDim.new(0, radius or 6),
 		Parent = parent
 	})
@@ -68,7 +74,7 @@ local function Corner(parent, radius)
 end
 
 local function FullCorner(parent)
-	local corner = New("UICorner", {
+	local corner = create("UICorner", {
 		CornerRadius = UDim.new(1, 0),
 		Parent = parent
 	})
@@ -76,7 +82,7 @@ local function FullCorner(parent)
 end
 
 local function Stroke(parent, color, transparency, thickness)
-	local stroke = New("UIStroke", {
+	local stroke = create("UIStroke", {
 		Color = color,
 		Transparency = transparency or 0,
 		Thickness = thickness or 1,
@@ -87,7 +93,7 @@ local function Stroke(parent, color, transparency, thickness)
 end
 
 local function Padding(parent, left, right, top, bottom)
-	local padding = New("UIPadding", {
+	local padding = create("UIPadding", {
 		PaddingLeft = UDim.new(0, left or 0),
 		PaddingRight = UDim.new(0, right or 0),
 		PaddingTop = UDim.new(0, top or 0),
@@ -261,91 +267,6 @@ local function ResolveMobileWindowSize(config)
 	local width = math.clamp(viewport.X - 20, 320, 520)
 	local height = math.clamp(viewport.Y - 20, 360, 700)
 	return UDim2.fromOffset(width, height)
-end
-
-local IntroState = {
-	Played = false,
-	Name = "GoogleGSpinningContainer",
-	Url = "https://raw.githubusercontent.com/Toluwerr/Google-UI/refs/heads/main/intro.lua",
-	Duration = 2.65,
-	Fade = 0.28,
-	Buffer = 0.16,
-	PostDelay = 2.0,
-	MaxWait = 7.5
-}
-
-local function IntroStepWait()
-	if RunService and RunService.Heartbeat then
-		RunService.Heartbeat:Wait()
-	elseif task and task.wait then
-		task.wait()
-	else
-		wait()
-	end
-end
-
-local function WaitSeconds(seconds)
-	local finish = os.clock() + math.max(0, seconds or 0)
-	while os.clock() < finish do
-		IntroStepWait()
-	end
-end
-
-local function FindIntroGui()
-	local targets = {}
-	local function add(parent)
-		if parent and not targets[parent] then
-			targets[parent] = true
-		end
-	end
-	add(SafeParent())
-	add(CoreGui)
-	if LocalPlayer then
-		add(LocalPlayer:FindFirstChildOfClass("PlayerGui"))
-	end
-	for parent in pairs(targets) do
-		local gui = parent:FindFirstChild(IntroState.Name)
-		if gui then
-			return gui
-		end
-	end
-	return nil
-end
-
-local function WaitForIntroCompletion(started)
-	local minimumFinish = started + IntroState.Duration + IntroState.Fade + IntroState.Buffer
-	local hardFinish = started + IntroState.MaxWait
-	while os.clock() < hardFinish do
-		local now = os.clock()
-		if now >= minimumFinish and not FindIntroGui() then
-			break
-		end
-		IntroStepWait()
-	end
-	WaitSeconds(IntroState.PostDelay)
-end
-
-local function RunStartupIntro()
-	if IntroState.Played then
-		return
-	end
-	IntroState.Played = true
-	local started = os.clock()
-	local played = false
-	local ok, err = pcall(function()
-		local source = game:HttpGet(IntroState.Url)
-		local fn = loadstring(source)
-		if type(fn) == "function" then
-			started = os.clock()
-			played = true
-			fn()
-		end
-	end)
-	if played then
-		WaitForIntroCompletion(started)
-	elseif not ok then
-		warn("Google UI intro failed: " .. tostring(err))
-	end
 end
 
 local function Blend(colorA, colorB, alpha)
@@ -531,7 +452,7 @@ function Google.CreateIcon(name, size, color, parent, properties)
 	local asset = ResolveIcon(name)
 	local icon
 	if asset then
-		icon = New("ImageLabel", {
+		icon = create("ImageLabel", {
 			Name = "Icon",
 			BackgroundTransparency = 1,
 			BorderSizePixel = 0,
@@ -543,7 +464,7 @@ function Google.CreateIcon(name, size, color, parent, properties)
 			Size = UDim2.fromOffset(size, size)
 		})
 	else
-		icon = New("TextLabel", {
+		icon = create("TextLabel", {
 			Name = "Icon",
 			BackgroundTransparency = 1,
 			BorderSizePixel = 0,
@@ -634,9 +555,8 @@ function Google:CreateWindow(config)
 	if config.AllowMultiple ~= true then
 		CleanupExistingInterfaces(parent)
 	end
-	RunStartupIntro()
 
-	local gui = New("ScreenGui", {
+	local gui = create("ScreenGui", {
 		Name = "GoogleUI",
 		IgnoreGuiInset = true,
 		ResetOnSpawn = false,
@@ -645,7 +565,7 @@ function Google:CreateWindow(config)
 	})
 	self.Gui = gui
 
-	local main = New("Frame", {
+	local main = create("Frame", {
 		Name = "Window",
 		Size = ScaleUDim2(self.Size, -14),
 		AnchorPoint = Vector2.new(0.5, 0.5),
@@ -657,7 +577,7 @@ function Google:CreateWindow(config)
 	})
 	self.Instance = main
 
-	local body = New("CanvasGroup", {
+	local body = create("CanvasGroup", {
 		Name = "Body",
 		Size = UDim2.fromScale(1, 1),
 		BackgroundColor3 = Google.Theme.Window,
@@ -670,7 +590,7 @@ function Google:CreateWindow(config)
 	self.Body = body
 	self.MainStroke = Stroke(body, Google.Theme.Border, 1, 0)
 
-	local topbar = New("Frame", {
+	local topbar = create("Frame", {
 		Name = "Topbar",
 		Size = UDim2.new(1, 0, 0, 54),
 		BackgroundColor3 = Google.Theme.Topbar,
@@ -680,7 +600,7 @@ function Google:CreateWindow(config)
 	self.Topbar = topbar
 	self.TopbarCorner = Corner(topbar, 0)
 
-	local topbarLine = New("Frame", {
+	local topbarLine = create("Frame", {
 		Name = "TopbarLine",
 		Size = UDim2.new(1, 0, 0, 1),
 		Position = UDim2.new(0, 0, 1, -1),
@@ -690,7 +610,7 @@ function Google:CreateWindow(config)
 	})
 	self.TopbarLine = topbarLine
 
-	local titleIconWrap = New("Frame", {
+	local titleIconWrap = create("Frame", {
 		Name = "TitleIconWrap",
 		Size = UDim2.fromOffset(32, 32),
 		Position = UDim2.fromOffset(14, 11),
@@ -705,7 +625,7 @@ function Google:CreateWindow(config)
 		AnchorPoint = Vector2.new(0.5, 0.5)
 	})
 
-	local title = New("TextLabel", {
+	local title = create("TextLabel", {
 		Name = "Title",
 		Text = self.Title,
 		Font = Enum.Font.GothamBold,
@@ -720,7 +640,7 @@ function Google:CreateWindow(config)
 	})
 	self.TitleLabel = title
 
-	local subtitle = New("TextLabel", {
+	local subtitle = create("TextLabel", {
 		Name = "Subtitle",
 		Text = self.Subtitle,
 		Font = Enum.Font.Gotham,
@@ -736,7 +656,7 @@ function Google:CreateWindow(config)
 	})
 	self.SubtitleLabel = subtitle
 
-	local controls = New("Frame", {
+	local controls = create("Frame", {
 		Name = "WindowControls",
 		Size = UDim2.fromOffset(76, 30),
 		Position = UDim2.new(1, -88, 0, 12),
@@ -745,7 +665,7 @@ function Google:CreateWindow(config)
 	})
 	self.ControlsFrame = controls
 
-	local minimizeButton = New("TextButton", {
+	local minimizeButton = create("TextButton", {
 		Name = "Minimize",
 		Text = "",
 		Size = UDim2.fromOffset(30, 30),
@@ -763,7 +683,7 @@ function Google:CreateWindow(config)
 		Position = UDim2.fromScale(0.5, 0.5)
 	})
 
-	local closeButton = New("TextButton", {
+	local closeButton = create("TextButton", {
 		Name = "Close",
 		Text = "",
 		Size = UDim2.fromOffset(30, 30),
@@ -806,7 +726,7 @@ function Google:CreateWindow(config)
 		Tween(closeButton, {BackgroundColor3 = Google.Theme.Hover, BackgroundTransparency = 1}, Motion.Fast)
 	end)
 
-	local sidebar = New("Frame", {
+	local sidebar = create("Frame", {
 		Name = "Sidebar",
 		Size = UDim2.new(0, 152, 1, -54),
 		Position = UDim2.fromOffset(0, 54),
@@ -816,7 +736,7 @@ function Google:CreateWindow(config)
 	})
 	self.Sidebar = sidebar
 
-	local sidebarLine = New("Frame", {
+	local sidebarLine = create("Frame", {
 		Name = "SidebarLine",
 		Size = UDim2.new(0, 1, 1, 0),
 		Position = UDim2.new(1, -1, 0, 0),
@@ -826,7 +746,7 @@ function Google:CreateWindow(config)
 	})
 	self.SidebarLine = sidebarLine
 
-	local tabList = New("ScrollingFrame", {
+	local tabList = create("ScrollingFrame", {
 		Name = "TabList",
 		Size = UDim2.new(1, -16, 1, -16),
 		Position = UDim2.fromOffset(8, 8),
@@ -838,14 +758,14 @@ function Google:CreateWindow(config)
 	})
 	self.TabList = tabList
 
-	local tabLayout = New("UIListLayout", {
+	local tabLayout = create("UIListLayout", {
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		Padding = UDim.new(0, 4),
 		Parent = tabList
 	})
 	self.TabLayout = tabLayout
 
-	local pageWrap = New("Frame", {
+	local pageWrap = create("Frame", {
 		Name = "PageWrap",
 		Size = UDim2.new(1, -152, 1, -54),
 		Position = UDim2.fromOffset(152, 54),
@@ -923,7 +843,7 @@ function Window:CreateTab(config)
 	tab.Connections = {}
 	tab.Active = false
 
-	local button = New("TextButton", {
+	local button = create("TextButton", {
 		Name = tab.Name,
 		Text = "",
 		Size = UDim2.new(1, 0, 0, 36),
@@ -936,7 +856,7 @@ function Window:CreateTab(config)
 	Corner(button, 8)
 	tab.Button = button
 
-	local accent = New("Frame", {
+	local accent = create("Frame", {
 		Name = "Accent",
 		Size = UDim2.new(0, 3, 0, 18),
 		Position = UDim2.fromOffset(0, 9),
@@ -951,7 +871,7 @@ function Window:CreateTab(config)
 	tab.IconLabel = Google.CreateIcon(tab.Icon, 17, Google.Theme.Muted, button, {
 		Position = UDim2.fromOffset(12, 9)
 	})
-	tab.TextLabel = New("TextLabel", {
+	tab.TextLabel = create("TextLabel", {
 		Name = "Text",
 		Text = tab.Name,
 		Font = Enum.Font.GothamMedium,
@@ -965,7 +885,7 @@ function Window:CreateTab(config)
 		Parent = button
 	})
 
-	local page = New("ScrollingFrame", {
+	local page = create("ScrollingFrame", {
 		Name = "Page_" .. tab.Name,
 		Size = UDim2.fromScale(1, 1),
 		BackgroundTransparency = 1,
@@ -978,7 +898,7 @@ function Window:CreateTab(config)
 	})
 	Padding(page, 14, 14, 14, 14)
 	tab.Page = page
-	tab.Layout = New("UIListLayout", {
+	tab.Layout = create("UIListLayout", {
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		Padding = UDim.new(0, 10),
 		Parent = page
@@ -1072,7 +992,7 @@ function Tab:CreateSection(config)
 	section.Connections = {}
 	section.Collapsed = config.Collapsed or false
 
-	local frame = New("Frame", {
+	local frame = create("Frame", {
 		Name = section.Name,
 		Size = UDim2.new(1, 0, 0, 56),
 		BackgroundColor3 = Google.Theme.Card,
@@ -1084,7 +1004,7 @@ function Tab:CreateSection(config)
 	section.Instance = frame
 	section.Stroke = Stroke(frame, Google.Theme.Border, 0.05, 1)
 
-	local header = New("TextButton", {
+	local header = create("TextButton", {
 		Name = "Header",
 		Text = "",
 		Size = UDim2.new(1, 0, 0, section.Description ~= "" and 54 or 42),
@@ -1098,7 +1018,7 @@ function Tab:CreateSection(config)
 	section.Arrow = Google.CreateIcon(section.Collapsed and "chevron-right" or "chevron-down", 14, Google.Theme.Muted, header, {
 		Position = UDim2.fromOffset(13, 14)
 	})
-	section.TitleLabel = New("TextLabel", {
+	section.TitleLabel = create("TextLabel", {
 		Name = "Title",
 		Text = section.Name,
 		Font = Enum.Font.GothamBold,
@@ -1110,7 +1030,7 @@ function Tab:CreateSection(config)
 		Position = UDim2.fromOffset(36, section.Description ~= "" and 9 or 11),
 		Parent = header
 	})
-	section.DescriptionLabel = New("TextLabel", {
+	section.DescriptionLabel = create("TextLabel", {
 		Name = "Description",
 		Text = section.Description,
 		Font = Enum.Font.Gotham,
@@ -1124,7 +1044,7 @@ function Tab:CreateSection(config)
 		Parent = header
 	})
 
-	local content = New("Frame", {
+	local content = create("Frame", {
 		Name = "Content",
 		Position = UDim2.fromOffset(0, header.Size.Y.Offset),
 		Size = UDim2.new(1, 0, 0, 0),
@@ -1135,7 +1055,7 @@ function Tab:CreateSection(config)
 	})
 	Padding(content, 10, 10, 0, 10)
 	section.Content = content
-	section.Layout = New("UIListLayout", {
+	section.Layout = create("UIListLayout", {
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		Padding = UDim.new(0, 7),
 		Parent = content
@@ -1169,7 +1089,7 @@ function Tab:GetStandaloneSection()
 	section.Connections = {}
 	section.Collapsed = false
 	section.Standalone = true
-	local frame = New("Frame", {
+	local frame = create("Frame", {
 		Name = "StandaloneComponents",
 		Size = UDim2.new(1, 0, 0, 0),
 		BackgroundColor3 = Google.Theme.Card,
@@ -1181,7 +1101,7 @@ function Tab:GetStandaloneSection()
 	Corner(frame, 10)
 	section.Instance = frame
 	section.Stroke = Stroke(frame, Google.Theme.Border, 0.05, 1)
-	local content = New("Frame", {
+	local content = create("Frame", {
 		Name = "Content",
 		Position = UDim2.fromOffset(0, 0),
 		Size = UDim2.new(1, 0, 0, 0),
@@ -1191,7 +1111,7 @@ function Tab:GetStandaloneSection()
 	})
 	Padding(content, 10, 10, 10, 10)
 	section.Content = content
-	section.Layout = New("UIListLayout", {
+	section.Layout = create("UIListLayout", {
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		Padding = UDim.new(0, 7),
 		Parent = content
@@ -1418,7 +1338,7 @@ local function Control(section, height, name)
 	local self = setmetatable({}, ControlBase)
 	self.Section = section
 	self.Connections = {}
-	local frame = New("Frame", {
+	local frame = create("Frame", {
 		Name = name or "Control",
 		Size = UDim2.new(1, 0, 0, height),
 		BackgroundColor3 = Google.Theme.CardAlt,
@@ -1436,7 +1356,7 @@ function Section:CreateButton(config)
 	local self = Control(self, config.Description and 48 or 36, "Button")
 	self.Callback = config.Callback or function() end
 	self.Icon = config.Icon
-	local button = New("TextButton", {
+	local button = create("TextButton", {
 		Name = "Button",
 		Text = "",
 		Size = UDim2.fromScale(1, 1),
@@ -1453,7 +1373,7 @@ function Section:CreateButton(config)
 			Position = UDim2.fromOffset(12, config.Description and 15 or 10)
 		})
 	end
-	self.TextLabel = New("TextLabel", {
+	self.TextLabel = create("TextLabel", {
 		Text = config.Name or "Button",
 		Font = Enum.Font.GothamBold,
 		TextSize = 13,
@@ -1465,7 +1385,7 @@ function Section:CreateButton(config)
 		Parent = button
 	})
 	if config.Description then
-		self.DescriptionLabel = New("TextLabel", {
+		self.DescriptionLabel = create("TextLabel", {
 			Text = config.Description,
 			Font = Enum.Font.Gotham,
 			TextSize = 12,
@@ -1512,7 +1432,7 @@ function Section:CreateToggle(config)
 	local self = Control(self, config.Description and 48 or 36, "Toggle")
 	self.Value = config.Default or false
 	self.Callback = config.Callback or function() end
-	self.Label = New("TextLabel", {
+	self.Label = create("TextLabel", {
 		Text = config.Name or "Toggle",
 		Font = Enum.Font.GothamMedium,
 		TextSize = 13,
@@ -1524,7 +1444,7 @@ function Section:CreateToggle(config)
 		Parent = self.Instance
 	})
 	if config.Description then
-		self.DescriptionLabel = New("TextLabel", {
+		self.DescriptionLabel = create("TextLabel", {
 			Text = config.Description,
 			Font = Enum.Font.Gotham,
 			TextSize = 12,
@@ -1536,7 +1456,7 @@ function Section:CreateToggle(config)
 			Parent = self.Instance
 		})
 	end
-	local switch = New("TextButton", {
+	local switch = create("TextButton", {
 		Text = "",
 		Size = UDim2.fromOffset(48, 26),
 		Position = UDim2.new(1, -48, 0.5, -13),
@@ -1550,7 +1470,7 @@ function Section:CreateToggle(config)
 	self.Switch = switch
 	self.SwitchStroke = Stroke(switch, self.Value and Google.Theme.PrimaryHover or Google.Theme.BorderStrong, 0.2, 1)
 	self.SwitchStroke.Name = "ToggleStroke"
-	self.SwitchGradient = New("UIGradient", {
+	self.SwitchGradient = create("UIGradient", {
 		Name = "EnhancedGradient",
 		Rotation = 0,
 		Color = ColorSequence.new({
@@ -1559,7 +1479,7 @@ function Section:CreateToggle(config)
 		}),
 		Parent = switch
 	})
-	self.Knob = New("Frame", {
+	self.Knob = create("Frame", {
 		Size = UDim2.fromOffset(22, 22),
 		Position = self.Value and UDim2.new(1, -24, 0.5, -11) or UDim2.fromOffset(2, 2),
 		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
@@ -1631,7 +1551,7 @@ function Section:CreateSlider(config)
 	self.Precision = config.Precision or 0
 	self.Callback = config.Callback or function() end
 	self.Dragging = false
-	self.Label = New("TextLabel", {
+	self.Label = create("TextLabel", {
 		Text = config.Name or "Slider",
 		Font = Enum.Font.GothamMedium,
 		TextSize = 13,
@@ -1642,7 +1562,7 @@ function Section:CreateSlider(config)
 		Position = UDim2.fromOffset(0, 4),
 		Parent = self.Instance
 	})
-	self.ValueLabel = New("TextLabel", {
+	self.ValueLabel = create("TextLabel", {
 		Text = tostring(self.Value),
 		Font = Enum.Font.GothamBold,
 		TextSize = 13,
@@ -1653,7 +1573,7 @@ function Section:CreateSlider(config)
 		Position = UDim2.new(1, -64, 0, 4),
 		Parent = self.Instance
 	})
-	self.Track = New("Frame", {
+	self.Track = create("Frame", {
 		Size = UDim2.new(1, 0, 0, 8),
 		Position = UDim2.fromOffset(0, 36),
 		BackgroundColor3 = Google.Theme.Border,
@@ -1664,7 +1584,7 @@ function Section:CreateSlider(config)
 	Corner(self.Track, 8)
 	self.TrackStroke = Stroke(self.Track, Google.Theme.BorderStrong, 0.65, 1)
 	self.TrackStroke.Name = "SliderTrackStroke"
-	self.Fill = New("Frame", {
+	self.Fill = create("Frame", {
 		Size = UDim2.fromScale(0, 1),
 		BackgroundColor3 = Google.Theme.Primary,
 		BorderSizePixel = 0,
@@ -1672,7 +1592,7 @@ function Section:CreateSlider(config)
 		Parent = self.Track
 	})
 	Corner(self.Fill, 8)
-	self.FillGradient = New("UIGradient", {
+	self.FillGradient = create("UIGradient", {
 		Name = "EnhancedGradient",
 		Rotation = 0,
 		Color = ColorSequence.new({
@@ -1681,7 +1601,7 @@ function Section:CreateSlider(config)
 		}),
 		Parent = self.Fill
 	})
-	self.Knob = New("Frame", {
+	self.Knob = create("Frame", {
 		Size = UDim2.fromOffset(20, 20),
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0, 0.5),
@@ -1692,7 +1612,7 @@ function Section:CreateSlider(config)
 	})
 	Corner(self.Knob, 10)
 	self.KnobStroke = Stroke(self.Knob, Google.Theme.Primary, 0.05, 2)
-	self.KnobDot = New("Frame", {
+	self.KnobDot = create("Frame", {
 		Size = UDim2.fromOffset(8, 8),
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.5),
@@ -1794,7 +1714,7 @@ function Section:CreateDropdown(config)
 	if self.Multi and type(self.Value) ~= "table" then
 		self.Value = self.Value and {self.Value} or {}
 	end
-	self.Main = New("TextButton", {
+	self.Main = create("TextButton", {
 		Text = "",
 		Size = UDim2.new(1, 0, 0, 36),
 		BackgroundColor3 = Google.Theme.Input,
@@ -1804,7 +1724,7 @@ function Section:CreateDropdown(config)
 	})
 	Corner(self.Main, 8)
 	self.MainStroke = Stroke(self.Main, Google.Theme.Border, 0.08, 1)
-	self.Label = New("TextLabel", {
+	self.Label = create("TextLabel", {
 		Text = config.Name or "Dropdown",
 		Font = Enum.Font.GothamMedium,
 		TextSize = 13,
@@ -1816,7 +1736,7 @@ function Section:CreateDropdown(config)
 		Position = UDim2.fromOffset(12, 0),
 		Parent = self.Main
 	})
-	self.SelectedLabel = New("TextLabel", {
+	self.SelectedLabel = create("TextLabel", {
 		Text = self.Multi and (#self.Value > 0 and table.concat(self.Value, ", ") or "Select") or tostring(self.Value or "Select"),
 		Font = Enum.Font.Gotham,
 		TextSize = 13,
@@ -1831,7 +1751,7 @@ function Section:CreateDropdown(config)
 	self.Arrow = Google.CreateIcon("chevron-down", 15, Google.Theme.Muted, self.Main, {
 		Position = UDim2.new(1, -27, 0.5, -7)
 	})
-	self.Menu = New("Frame", {
+	self.Menu = create("Frame", {
 		Name = "Menu",
 		Position = UDim2.fromOffset(0, 42),
 		Size = UDim2.new(1, 0, 0, 0),
@@ -1845,7 +1765,7 @@ function Section:CreateDropdown(config)
 	self.MenuStroke = Stroke(self.Menu, Google.Theme.Border, 0.08, 1)
 	local searchOffset = 0
 	if self.Searchable then
-		self.SearchBox = New("TextBox", {
+		self.SearchBox = create("TextBox", {
 			Text = "",
 			PlaceholderText = "Search",
 			Font = Enum.Font.Gotham,
@@ -1864,7 +1784,7 @@ function Section:CreateDropdown(config)
 		Padding(self.SearchBox, 8, 8, 0, 0)
 		searchOffset = 36
 	end
-	self.OptionsFrame = New("ScrollingFrame", {
+	self.OptionsFrame = create("ScrollingFrame", {
 		Size = UDim2.new(1, -6, 1, -searchOffset - 6),
 		Position = UDim2.fromOffset(3, searchOffset + 3),
 		BackgroundTransparency = 1,
@@ -1873,7 +1793,7 @@ function Section:CreateDropdown(config)
 		CanvasSize = UDim2.fromOffset(0, 0),
 		Parent = self.Menu
 	})
-	self.OptionLayout = New("UIListLayout", {
+	self.OptionLayout = create("UIListLayout", {
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		Padding = UDim.new(0, 2),
 		Parent = self.OptionsFrame
@@ -1892,7 +1812,7 @@ function Section:CreateDropdown(config)
 			end
 		end
 		for i, option in ipairs(self.Options) do
-			local item = New("TextButton", {
+			local item = create("TextButton", {
 				Name = tostring(option),
 				Text = "",
 				Size = UDim2.new(1, -4, 0, 28),
@@ -1904,7 +1824,7 @@ function Section:CreateDropdown(config)
 				Parent = self.OptionsFrame
 			})
 			Corner(item, 7)
-			local label = New("TextLabel", {
+			local label = create("TextLabel", {
 				Text = tostring(option),
 				Font = Enum.Font.Gotham,
 				TextSize = 13,
@@ -2056,7 +1976,7 @@ function Section:CreateTextbox(config)
 	self.Value = config.Default or ""
 	self.Numeric = config.Numeric or false
 	self.Callback = config.Callback or function() end
-	self.Label = New("TextLabel", {
+	self.Label = create("TextLabel", {
 		Text = config.Name or "Textbox",
 		Font = Enum.Font.GothamMedium,
 		TextSize = 13,
@@ -2067,7 +1987,7 @@ function Section:CreateTextbox(config)
 		Position = UDim2.fromOffset(0, 0),
 		Parent = self.Instance
 	})
-	self.Entry = New("TextBox", {
+	self.Entry = create("TextBox", {
 		Text = tostring(self.Value),
 		PlaceholderText = config.Placeholder or "",
 		Font = Enum.Font.Gotham,
@@ -2135,7 +2055,7 @@ function Section:CreateKeybind(config)
 	self.Callback = config.Callback or function() end
 	self.Holding = false
 	self.Binding = false
-	self.Label = New("TextLabel", {
+	self.Label = create("TextLabel", {
 		Text = config.Name or "Keybind",
 		Font = Enum.Font.GothamMedium,
 		TextSize = 13,
@@ -2145,7 +2065,7 @@ function Section:CreateKeybind(config)
 		Size = UDim2.new(1, -92, 1, 0),
 		Parent = self.Instance
 	})
-	self.Button = New("TextButton", {
+	self.Button = create("TextButton", {
 		Text = self.Value.Name,
 		Font = Enum.Font.GothamBold,
 		TextSize = 12,
@@ -2242,7 +2162,7 @@ function Section:CreateColorPicker(config)
 		Color3.fromRGB(245, 158, 11),
 		Color3.fromRGB(236, 72, 153)
 	}
-	self.Label = New("TextLabel", {
+	self.Label = create("TextLabel", {
 		Text = config.Name or "Color",
 		Font = Enum.Font.GothamMedium,
 		TextSize = 13,
@@ -2252,7 +2172,7 @@ function Section:CreateColorPicker(config)
 		Size = UDim2.new(1, -52, 0, 34),
 		Parent = self.Instance
 	})
-	self.Button = New("TextButton", {
+	self.Button = create("TextButton", {
 		Text = "",
 		Size = UDim2.fromOffset(34, 28),
 		Position = UDim2.new(1, -34, 0, 4),
@@ -2263,7 +2183,7 @@ function Section:CreateColorPicker(config)
 	})
 	Corner(self.Button, 8)
 	self.ButtonStroke = Stroke(self.Button, Google.Theme.Border, 0.08, 1)
-	self.Palette = New("Frame", {
+	self.Palette = create("Frame", {
 		Size = UDim2.new(1, 0, 0, 0),
 		Position = UDim2.fromOffset(0, 42),
 		BackgroundTransparency = 1,
@@ -2271,7 +2191,7 @@ function Section:CreateColorPicker(config)
 		Visible = false,
 		Parent = self.Instance
 	})
-	self.PaletteLayout = New("UIGridLayout", {
+	self.PaletteLayout = create("UIGridLayout", {
 		CellSize = UDim2.fromOffset(28, 28),
 		CellPadding = UDim2.fromOffset(6, 6),
 		SortOrder = Enum.SortOrder.LayoutOrder,
@@ -2288,7 +2208,7 @@ function Section:CreateColorPicker(config)
 		return self.Value
 	end
 	for i, color in ipairs(self.Colors) do
-		local swatch = New("TextButton", {
+		local swatch = create("TextButton", {
 			Text = "",
 			Size = UDim2.fromOffset(28, 28),
 			BackgroundColor3 = color,
@@ -2342,7 +2262,7 @@ function Section:CreateLabel(config)
 	end
 	config = config or {}
 	local self = Control(self, 24, "Label")
-	self.Label = New("TextLabel", {
+	self.Label = create("TextLabel", {
 		Text = config.Name or config.Text or "Label",
 		Font = Enum.Font.Gotham,
 		TextSize = 13,
@@ -2378,7 +2298,7 @@ function Section:CreateParagraph(config)
 	Corner(self.Instance, 8)
 	self.Stroke = Stroke(self.Instance, Google.Theme.Border, 0.1, 1)
 	if title then
-		self.TitleLabel = New("TextLabel", {
+		self.TitleLabel = create("TextLabel", {
 			Text = title,
 			Font = Enum.Font.GothamBold,
 			TextSize = 13,
@@ -2390,7 +2310,7 @@ function Section:CreateParagraph(config)
 			Parent = self.Instance
 		})
 	end
-	self.TextLabel = New("TextLabel", {
+	self.TextLabel = create("TextLabel", {
 		Text = text,
 		Font = Enum.Font.Gotham,
 		TextSize = 12,
@@ -2419,7 +2339,6 @@ function Section:AddParagraph(config)
 	return self:CreateParagraph(config)
 end
 
-
 function Section:CreateImage(config)
 	config = config or {}
 	local title = config.Title or config.Name
@@ -2443,7 +2362,7 @@ function Section:CreateImage(config)
 	Corner(self.Instance, 10)
 	self.Stroke = Stroke(self.Instance, Google.Theme.Border, 0.1, 1)
 	if title then
-		self.TitleLabel = New("TextLabel", {
+		self.TitleLabel = create("TextLabel", {
 			Text = title,
 			Font = Enum.Font.GothamBold,
 			TextSize = 13,
@@ -2456,7 +2375,7 @@ function Section:CreateImage(config)
 		})
 	end
 	if description then
-		self.DescriptionLabel = New("TextLabel", {
+		self.DescriptionLabel = create("TextLabel", {
 			Text = description,
 			Font = Enum.Font.Gotham,
 			TextSize = 12,
@@ -2468,7 +2387,7 @@ function Section:CreateImage(config)
 			Parent = self.Instance
 		})
 	end
-	self.ImageFrame = New("Frame", {
+	self.ImageFrame = create("Frame", {
 		Size = UDim2.new(1, -20, 0, imageHeight),
 		Position = UDim2.fromOffset(10, topOffset),
 		BackgroundColor3 = config.BackgroundColor or Google.Theme.Input,
@@ -2480,7 +2399,7 @@ function Section:CreateImage(config)
 	self.ImageStroke = Stroke(self.ImageFrame, Google.Theme.Border, 0.08, 1)
 	local initialSource = config.Image or config.ImageId or config.Source or config.AssetId or config.Id
 	self.ImageFallback = ResolveImageThumbnail(initialSource)
-	self.Image = New("ImageLabel", {
+	self.Image = create("ImageLabel", {
 		Name = "Image",
 		Size = UDim2.fromScale(1, 1),
 		BackgroundTransparency = 1,
@@ -2489,7 +2408,7 @@ function Section:CreateImage(config)
 		Image = ResolveImageSource(config.Image or config.ImageId or config.Source or config.AssetId or config.Id),
 		Parent = self.ImageFrame
 	})
-	self.Placeholder = New("TextLabel", {
+	self.Placeholder = create("TextLabel", {
 		Text = config.Placeholder or "Image",
 		Font = Enum.Font.Gotham,
 		TextSize = 12,
@@ -2556,7 +2475,7 @@ function Section:CreateDivider(config)
 	end
 	local self = Control(self, config.Name and 24 or 16, "Divider")
 	if config.Name then
-		self.Label = New("TextLabel", {
+		self.Label = create("TextLabel", {
 			Text = config.Name,
 			Font = Enum.Font.GothamMedium,
 			TextSize = 12,
@@ -2567,14 +2486,14 @@ function Section:CreateDivider(config)
 			Position = UDim2.fromScale(0.34, 0),
 			Parent = self.Instance
 		})
-		self.Left = New("Frame", {
+		self.Left = create("Frame", {
 			Size = UDim2.new(0.34, -8, 0, 1),
 			Position = UDim2.new(0, 0, 0.5, 0),
 			BackgroundColor3 = Google.Theme.Border,
 			BorderSizePixel = 0,
 			Parent = self.Instance
 		})
-		self.Right = New("Frame", {
+		self.Right = create("Frame", {
 			Size = UDim2.new(0.34, -8, 0, 1),
 			Position = UDim2.new(0.66, 8, 0.5, 0),
 			BackgroundColor3 = Google.Theme.Border,
@@ -2582,7 +2501,7 @@ function Section:CreateDivider(config)
 			Parent = self.Instance
 		})
 	else
-		self.Line = New("Frame", {
+		self.Line = create("Frame", {
 			Size = UDim2.new(1, 0, 0, 1),
 			Position = UDim2.new(0, 0, 0.5, 0),
 			BackgroundColor3 = Google.Theme.Border,
@@ -2605,7 +2524,6 @@ end
 function Section:AddDivider(config)
 	return self:CreateDivider(config)
 end
-
 
 function Window:UpdateTabListCanvas()
 	if not self.TabList or not self.TabLayout then
@@ -2844,14 +2762,14 @@ function NotificationManager:Init()
 	if self.Gui then
 		return
 	end
-	self.Gui = New("ScreenGui", {
+	self.Gui = create("ScreenGui", {
 		Name = "GoogleUINotifications",
 		IgnoreGuiInset = true,
 		ResetOnSpawn = false,
 		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 		Parent = SafeParent()
 	})
-	self.Holder = New("Frame", {
+	self.Holder = create("Frame", {
 		Name = "Holder",
 		Size = UDim2.fromScale(1, 1),
 		BackgroundTransparency = 1,
@@ -2874,7 +2792,7 @@ function NotificationManager:Push(config)
 	self:Init()
 	config = config or {}
 	local duration = config.Duration or 3
-	local frame = New("Frame", {
+	local frame = create("Frame", {
 		Size = UDim2.fromOffset(292, 62),
 		AnchorPoint = Vector2.new(1, 1),
 		Position = UDim2.new(1, 310, 1, -18),
@@ -2885,7 +2803,7 @@ function NotificationManager:Push(config)
 	})
 	Corner(frame, 10)
 	Stroke(frame, Google.Theme.Border, 0.05, 1)
-	local iconWrap = New("Frame", {
+	local iconWrap = create("Frame", {
 		Size = UDim2.fromOffset(34, 34),
 		Position = UDim2.fromOffset(12, 14),
 		BackgroundColor3 = Google.Theme.PrimarySoft,
@@ -2897,7 +2815,7 @@ function NotificationManager:Push(config)
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.5)
 	})
-	New("TextLabel", {
+	create("TextLabel", {
 		Text = config.Title or "Notification",
 		Font = Enum.Font.GothamBold,
 		TextSize = 13,
@@ -2908,7 +2826,7 @@ function NotificationManager:Push(config)
 		Position = UDim2.fromOffset(56, 12),
 		Parent = frame
 	})
-	New("TextLabel", {
+	create("TextLabel", {
 		Text = config.Description or "",
 		Font = Enum.Font.Gotham,
 		TextSize = 12,
@@ -2920,7 +2838,7 @@ function NotificationManager:Push(config)
 		Position = UDim2.fromOffset(56, 30),
 		Parent = frame
 	})
-	local progress = New("Frame", {
+	local progress = create("Frame", {
 		Size = UDim2.new(1, -14, 0, 2),
 		Position = UDim2.new(0, 7, 1, -5),
 		BackgroundColor3 = Google.Theme.Primary,
@@ -2958,20 +2876,20 @@ end
 function Google:Confirm(config)
 	config = config or {}
 	local callback = config.Callback or function() end
-	local gui = New("ScreenGui", {
+	local gui = create("ScreenGui", {
 		Name = "GoogleUIConfirm",
 		IgnoreGuiInset = true,
 		ResetOnSpawn = false,
 		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 		Parent = SafeParent()
 	})
-	local overlay = New("Frame", {
+	local overlay = create("Frame", {
 		Size = UDim2.fromScale(1, 1),
 		BackgroundColor3 = Color3.new(0, 0, 0),
 		BackgroundTransparency = 0.45,
 		Parent = gui
 	})
-	local dialog = New("Frame", {
+	local dialog = create("Frame", {
 		Size = UDim2.fromOffset(320, 142),
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.5),
@@ -2981,7 +2899,7 @@ function Google:Confirm(config)
 	})
 	Corner(dialog, 12)
 	Stroke(dialog, Google.Theme.Border, 0.05, 1)
-	New("TextLabel", {
+	create("TextLabel", {
 		Text = config.Title or "Confirm",
 		Font = Enum.Font.GothamBold,
 		TextSize = 15,
@@ -2992,7 +2910,7 @@ function Google:Confirm(config)
 		Position = UDim2.fromOffset(14, 14),
 		Parent = dialog
 	})
-	New("TextLabel", {
+	create("TextLabel", {
 		Text = config.Description or "Are you sure?",
 		Font = Enum.Font.Gotham,
 		TextSize = 12,
@@ -3004,7 +2922,7 @@ function Google:Confirm(config)
 		Position = UDim2.fromOffset(14, 42),
 		Parent = dialog
 	})
-	local cancel = New("TextButton", {
+	local cancel = create("TextButton", {
 		Text = config.CancelText or "Cancel",
 		Font = Enum.Font.GothamBold,
 		TextSize = 13,
@@ -3017,7 +2935,7 @@ function Google:Confirm(config)
 		Parent = dialog
 	})
 	Corner(cancel, 8)
-	local confirm = New("TextButton", {
+	local confirm = create("TextButton", {
 		Text = config.ConfirmText or "Confirm",
 		Font = Enum.Font.GothamBold,
 		TextSize = 13,
@@ -3043,20 +2961,20 @@ end
 function Google:Prompt(config)
 	config = config or {}
 	local callback = config.Callback or function() end
-	local gui = New("ScreenGui", {
+	local gui = create("ScreenGui", {
 		Name = "GoogleUIPrompt",
 		IgnoreGuiInset = true,
 		ResetOnSpawn = false,
 		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 		Parent = SafeParent()
 	})
-	local overlay = New("Frame", {
+	local overlay = create("Frame", {
 		Size = UDim2.fromScale(1, 1),
 		BackgroundColor3 = Color3.new(0, 0, 0),
 		BackgroundTransparency = 0.45,
 		Parent = gui
 	})
-	local dialog = New("Frame", {
+	local dialog = create("Frame", {
 		Size = UDim2.fromOffset(330, 170),
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.5),
@@ -3066,7 +2984,7 @@ function Google:Prompt(config)
 	})
 	Corner(dialog, 12)
 	Stroke(dialog, Google.Theme.Border, 0.05, 1)
-	New("TextLabel", {
+	create("TextLabel", {
 		Text = config.Title or "Input",
 		Font = Enum.Font.GothamBold,
 		TextSize = 15,
@@ -3077,7 +2995,7 @@ function Google:Prompt(config)
 		Position = UDim2.fromOffset(14, 12),
 		Parent = dialog
 	})
-	New("TextLabel", {
+	create("TextLabel", {
 		Text = config.Description or "",
 		Font = Enum.Font.Gotham,
 		TextSize = 12,
@@ -3089,7 +3007,7 @@ function Google:Prompt(config)
 		Position = UDim2.fromOffset(14, 36),
 		Parent = dialog
 	})
-	local input = New("TextBox", {
+	local input = create("TextBox", {
 		Text = config.Default or "",
 		PlaceholderText = config.Placeholder or "",
 		Font = Enum.Font.Gotham,
@@ -3107,7 +3025,7 @@ function Google:Prompt(config)
 	Corner(input, 8)
 	Stroke(input, Google.Theme.Border, 0.08, 1)
 	Padding(input, 10, 10, 0, 0)
-	local cancel = New("TextButton", {
+	local cancel = create("TextButton", {
 		Text = config.CancelText or "Cancel",
 		Font = Enum.Font.GothamBold,
 		TextSize = 13,
@@ -3120,7 +3038,7 @@ function Google:Prompt(config)
 		Parent = dialog
 	})
 	Corner(cancel, 8)
-	local confirm = New("TextButton", {
+	local confirm = create("TextButton", {
 		Text = config.ConfirmText or "Submit",
 		Font = Enum.Font.GothamBold,
 		TextSize = 13,
@@ -3156,7 +3074,6 @@ function Google:Cleanup()
 		NotificationManager.Items = {}
 	end
 end
-
 
 local EnhancedDefaults = {
 	ColorPalette = {
@@ -3211,7 +3128,7 @@ local function EnsureGradient(instance, colorA, colorB, rotation)
 	end
 	local gradient = FindDirectChild(instance, "EnhancedGradient")
 	if not gradient then
-		gradient = New("UIGradient", {
+		gradient = create("UIGradient", {
 			Name = "EnhancedGradient",
 			Rotation = rotation or 90,
 			Parent = instance
@@ -3230,7 +3147,7 @@ local function EnsureScale(instance)
 	end
 	local scale = FindDirectChild(instance, "EnhancedScale")
 	if not scale then
-		scale = New("UIScale", {
+		scale = create("UIScale", {
 			Name = "EnhancedScale",
 			Scale = 1,
 			Parent = instance
@@ -3519,7 +3436,7 @@ function Section:CreateSlider(config)
 	UseCallbackGuard(control)
 	if config.Description then
 		control.Instance.Size = UDim2.new(1, 0, 0, 74)
-		control.DescriptionLabel = New("TextLabel", {
+		control.DescriptionLabel = create("TextLabel", {
 			Text = config.Description,
 			Font = Enum.Font.Gotham,
 			TextSize = 12,
@@ -3764,7 +3681,7 @@ function Section:CreateTextbox(config)
 		control.EntryGradient = EnsureGradient(control.Entry, Google.Theme.Input, Blend(Google.Theme.Input, Google.Theme.Hover, 0.35), 90)
 	end
 	if config.ClearButton ~= false and control.Entry then
-		control.ClearButton = New("TextButton", {
+		control.ClearButton = create("TextButton", {
 			Text = "×",
 			Font = Enum.Font.GothamBold,
 			TextSize = 14,
@@ -4139,7 +4056,6 @@ function Section:CreateDivider(config)
 	return control
 end
 
-
 local PreviousGoogleThemeList = Google.Themes
 Google.Themes = {
 	Google = PreviousGoogleThemeList.Google,
@@ -4358,6 +4274,5 @@ function Section:CreateSlider(config)
 	control:UpdateVisual()
 	return control
 end
-
 
 return Google
