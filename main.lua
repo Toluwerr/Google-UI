@@ -67,6 +67,14 @@ local function Corner(parent, radius)
 	return corner
 end
 
+local function FullCorner(parent)
+	local corner = New("UICorner", {
+		CornerRadius = UDim.new(1, 0),
+		Parent = parent
+	})
+	return corner
+end
+
 local function Stroke(parent, color, transparency, thickness)
 	local stroke = New("UIStroke", {
 		Color = color,
@@ -262,14 +270,24 @@ local IntroState = {
 	Duration = 2.65,
 	Fade = 0.28,
 	Buffer = 0.16,
-	PostDelay = 1.35,
-	MaxWait = 6.25
+	PostDelay = 2.0,
+	MaxWait = 7.5
 }
+
+local function IntroStepWait()
+	if RunService and RunService.Heartbeat then
+		RunService.Heartbeat:Wait()
+	elseif task and task.wait then
+		task.wait()
+	else
+		wait()
+	end
+end
 
 local function WaitSeconds(seconds)
 	local finish = os.clock() + math.max(0, seconds or 0)
 	while os.clock() < finish do
-		RunService.Heartbeat:Wait()
+		IntroStepWait()
 	end
 end
 
@@ -302,7 +320,7 @@ local function WaitForIntroCompletion(started)
 		if now >= minimumFinish and not FindIntroGui() then
 			break
 		end
-		RunService.Heartbeat:Wait()
+		IntroStepWait()
 	end
 	WaitSeconds(IntroState.PostDelay)
 end
@@ -318,6 +336,7 @@ local function RunStartupIntro()
 		local source = game:HttpGet(IntroState.Url)
 		local fn = loadstring(source)
 		if type(fn) == "function" then
+			started = os.clock()
 			played = true
 			fn()
 		end
@@ -357,70 +376,70 @@ Google.Themes = {
 		Hover = Color3.fromRGB(241, 245, 249),
 		Shadow = Color3.fromRGB(15, 23, 42)
 	},
-	Dark = {
-		Window = Color3.fromRGB(18, 20, 24),
-		Topbar = Color3.fromRGB(24, 27, 32),
-		Sidebar = Color3.fromRGB(22, 25, 30),
-		Page = Color3.fromRGB(15, 17, 21),
-		Card = Color3.fromRGB(25, 29, 35),
-		CardAlt = Color3.fromRGB(31, 36, 43),
-		Text = Color3.fromRGB(238, 242, 247),
-		Muted = Color3.fromRGB(156, 166, 182),
-		Subtle = Color3.fromRGB(111, 123, 141),
-		Border = Color3.fromRGB(45, 52, 63),
-		BorderStrong = Color3.fromRGB(64, 73, 88),
-		Primary = Color3.fromRGB(96, 165, 250),
-		PrimaryHover = Color3.fromRGB(59, 130, 246),
-		PrimarySoft = Color3.fromRGB(25, 54, 93),
+	Red = {
+		Window = Color3.fromRGB(248, 250, 252),
+		Topbar = Color3.fromRGB(255, 255, 255),
+		Sidebar = Color3.fromRGB(255, 255, 255),
+		Page = Color3.fromRGB(245, 247, 251),
+		Card = Color3.fromRGB(255, 255, 255),
+		CardAlt = Color3.fromRGB(248, 250, 252),
+		Text = Color3.fromRGB(31, 41, 55),
+		Muted = Color3.fromRGB(100, 116, 139),
+		Subtle = Color3.fromRGB(148, 163, 184),
+		Border = Color3.fromRGB(226, 232, 240),
+		BorderStrong = Color3.fromRGB(203, 213, 225),
+		Primary = Color3.fromRGB(234, 67, 53),
+		PrimaryHover = Color3.fromRGB(197, 48, 39),
+		PrimarySoft = Color3.fromRGB(252, 232, 230),
 		Success = Color3.fromRGB(52, 168, 83),
 		Warning = Color3.fromRGB(251, 188, 4),
-		Danger = Color3.fromRGB(248, 81, 73),
-		Input = Color3.fromRGB(19, 22, 27),
-		Hover = Color3.fromRGB(35, 40, 48),
-		Shadow = Color3.fromRGB(0, 0, 0)
-	},
-	Midnight = {
-		Window = Color3.fromRGB(10, 13, 20),
-		Topbar = Color3.fromRGB(16, 21, 33),
-		Sidebar = Color3.fromRGB(13, 17, 27),
-		Page = Color3.fromRGB(8, 11, 18),
-		Card = Color3.fromRGB(17, 22, 35),
-		CardAlt = Color3.fromRGB(23, 29, 44),
-		Text = Color3.fromRGB(241, 245, 249),
-		Muted = Color3.fromRGB(148, 163, 184),
-		Subtle = Color3.fromRGB(100, 116, 139),
-		Border = Color3.fromRGB(30, 41, 59),
-		BorderStrong = Color3.fromRGB(51, 65, 85),
-		Primary = Color3.fromRGB(99, 102, 241),
-		PrimaryHover = Color3.fromRGB(79, 70, 229),
-		PrimarySoft = Color3.fromRGB(39, 39, 89),
-		Success = Color3.fromRGB(34, 197, 94),
-		Warning = Color3.fromRGB(245, 158, 11),
-		Danger = Color3.fromRGB(239, 68, 68),
-		Input = Color3.fromRGB(12, 17, 29),
-		Hover = Color3.fromRGB(25, 34, 51),
-		Shadow = Color3.fromRGB(0, 0, 0)
-	},
-	Ocean = {
-		Window = Color3.fromRGB(238, 249, 252),
-		Topbar = Color3.fromRGB(255, 255, 255),
-		Sidebar = Color3.fromRGB(250, 253, 255),
-		Page = Color3.fromRGB(231, 245, 250),
-		Card = Color3.fromRGB(255, 255, 255),
-		CardAlt = Color3.fromRGB(241, 250, 253),
-		Text = Color3.fromRGB(19, 52, 66),
-		Muted = Color3.fromRGB(77, 106, 122),
-		Subtle = Color3.fromRGB(125, 151, 166),
-		Border = Color3.fromRGB(200, 225, 234),
-		BorderStrong = Color3.fromRGB(164, 206, 221),
-		Primary = Color3.fromRGB(14, 165, 233),
-		PrimaryHover = Color3.fromRGB(2, 132, 199),
-		PrimarySoft = Color3.fromRGB(224, 242, 254),
-		Success = Color3.fromRGB(16, 185, 129),
-		Warning = Color3.fromRGB(245, 158, 11),
-		Danger = Color3.fromRGB(239, 68, 68),
+		Danger = Color3.fromRGB(234, 67, 53),
 		Input = Color3.fromRGB(255, 255, 255),
-		Hover = Color3.fromRGB(224, 242, 254),
+		Hover = Color3.fromRGB(253, 242, 241),
+		Shadow = Color3.fromRGB(15, 23, 42)
+	},
+	Yellow = {
+		Window = Color3.fromRGB(248, 250, 252),
+		Topbar = Color3.fromRGB(255, 255, 255),
+		Sidebar = Color3.fromRGB(255, 255, 255),
+		Page = Color3.fromRGB(245, 247, 251),
+		Card = Color3.fromRGB(255, 255, 255),
+		CardAlt = Color3.fromRGB(248, 250, 252),
+		Text = Color3.fromRGB(31, 41, 55),
+		Muted = Color3.fromRGB(100, 116, 139),
+		Subtle = Color3.fromRGB(148, 163, 184),
+		Border = Color3.fromRGB(226, 232, 240),
+		BorderStrong = Color3.fromRGB(203, 213, 225),
+		Primary = Color3.fromRGB(251, 188, 4),
+		PrimaryHover = Color3.fromRGB(240, 164, 0),
+		PrimarySoft = Color3.fromRGB(254, 247, 224),
+		Success = Color3.fromRGB(52, 168, 83),
+		Warning = Color3.fromRGB(251, 188, 4),
+		Danger = Color3.fromRGB(234, 67, 53),
+		Input = Color3.fromRGB(255, 255, 255),
+		Hover = Color3.fromRGB(255, 250, 235),
+		Shadow = Color3.fromRGB(15, 23, 42)
+	},
+	Green = {
+		Window = Color3.fromRGB(248, 250, 252),
+		Topbar = Color3.fromRGB(255, 255, 255),
+		Sidebar = Color3.fromRGB(255, 255, 255),
+		Page = Color3.fromRGB(245, 247, 251),
+		Card = Color3.fromRGB(255, 255, 255),
+		CardAlt = Color3.fromRGB(248, 250, 252),
+		Text = Color3.fromRGB(31, 41, 55),
+		Muted = Color3.fromRGB(100, 116, 139),
+		Subtle = Color3.fromRGB(148, 163, 184),
+		Border = Color3.fromRGB(226, 232, 240),
+		BorderStrong = Color3.fromRGB(203, 213, 225),
+		Primary = Color3.fromRGB(52, 168, 83),
+		PrimaryHover = Color3.fromRGB(30, 142, 62),
+		PrimarySoft = Color3.fromRGB(230, 244, 234),
+		Success = Color3.fromRGB(52, 168, 83),
+		Warning = Color3.fromRGB(251, 188, 4),
+		Danger = Color3.fromRGB(234, 67, 53),
+		Input = Color3.fromRGB(255, 255, 255),
+		Hover = Color3.fromRGB(240, 249, 244),
 		Shadow = Color3.fromRGB(15, 23, 42)
 	}
 }
@@ -649,7 +668,7 @@ function Google:CreateWindow(config)
 	})
 	self.BodyCorner = Corner(body, 20)
 	self.Body = body
-	self.MainStroke = Stroke(body, Google.Theme.Border, 1, 1)
+	self.MainStroke = Stroke(body, Google.Theme.Border, 1, 0)
 
 	local topbar = New("Frame", {
 		Name = "Topbar",
@@ -2707,6 +2726,7 @@ function Window:ApplyTheme()
 	self.Body.BackgroundColor3 = theme.Window
 	self.MainStroke.Color = theme.Border
 	self.MainStroke.Transparency = 1
+	self.MainStroke.Thickness = 0
 	self.Topbar.BackgroundColor3 = theme.Topbar
 	self.TopbarLine.BackgroundColor3 = theme.Border
 	self.Sidebar.BackgroundColor3 = theme.Sidebar
@@ -4118,5 +4138,226 @@ function Section:CreateDivider(config)
 	if config.Color then control:SetColor(config.Color) end
 	return control
 end
+
+
+local PreviousGoogleThemeList = Google.Themes
+Google.Themes = {
+	Google = PreviousGoogleThemeList.Google,
+	Red = PreviousGoogleThemeList.Red,
+	Yellow = PreviousGoogleThemeList.Yellow,
+	Green = PreviousGoogleThemeList.Green
+}
+Google.ActiveTheme = Google.Themes[Google.ActiveTheme] and Google.ActiveTheme or "Google"
+Google.Theme = Google.Themes[Google.ActiveTheme]
+
+local function SetFullCorner(instance)
+	if not instance then
+		return nil
+	end
+	for _, child in ipairs(instance:GetChildren()) do
+		if child:IsA("UICorner") then
+			child.CornerRadius = UDim.new(1, 0)
+			return child
+		end
+	end
+	return FullCorner(instance)
+end
+
+local function RemoveVisualChildren(instance, className, exceptName)
+	if not instance then
+		return
+	end
+	for _, child in ipairs(instance:GetChildren()) do
+		if child:IsA(className) and child.Name ~= exceptName then
+			pcall(function()
+				child:Destroy()
+			end)
+		end
+	end
+end
+
+local function ApplyCleanToggleVisual(control)
+	if not control then
+		return
+	end
+	local on = control.Value and true or false
+	local switchColor = on and Google.Theme.Primary or Google.Theme.BorderStrong
+	if control.Switch then
+		control.Switch.Size = UDim2.fromOffset(48, 24)
+		control.Switch.Position = UDim2.new(1, -48, 0.5, -12)
+		control.Switch.BackgroundColor3 = switchColor
+		control.Switch.BackgroundTransparency = control.Disabled and 0.45 or 0
+		control.Switch.ClipsDescendants = true
+		SetFullCorner(control.Switch)
+		RemoveVisualChildren(control.Switch, "UIStroke")
+		RemoveVisualChildren(control.Switch, "UIGradient")
+	end
+	if control.Knob then
+		control.Knob.Size = UDim2.fromOffset(20, 20)
+		control.Knob.Position = on and UDim2.new(1, -22, 0.5, -10) or UDim2.fromOffset(2, 2)
+		control.Knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		control.Knob.BackgroundTransparency = 0
+		control.Knob.BorderSizePixel = 0
+		SetFullCorner(control.Knob)
+		RemoveVisualChildren(control.Knob, "UIStroke")
+		RemoveVisualChildren(control.Knob, "UIGradient")
+	end
+	control.SwitchStroke = nil
+	control.SwitchGradient = nil
+	control.KnobStroke = nil
+end
+
+local BaseCleanToggleCreate = Section.CreateToggle
+function Section:CreateToggle(config)
+	config = config or {}
+	local control = BaseCleanToggleCreate(self, config)
+	ApplyCleanToggleVisual(control)
+	local previousSet = control.Set
+	function control:Set(value)
+		if self.Disabled then
+			return self
+		end
+		self.Value = value and true or false
+		local switchColor = self.Value and Google.Theme.Primary or Google.Theme.BorderStrong
+		if self.Switch then
+			Tween(self.Switch, {BackgroundColor3 = switchColor, BackgroundTransparency = 0}, Motion.Base)
+		end
+		if self.Knob then
+			Tween(self.Knob, {Position = self.Value and UDim2.new(1, -22, 0.5, -10) or UDim2.fromOffset(2, 2)}, Motion.Base)
+		end
+		self.Callback(self.Value)
+		return self
+	end
+	local previousApply = control.ApplyTheme
+	function control:ApplyTheme()
+		if previousApply then previousApply(self) end
+		ApplyCleanToggleVisual(self)
+	end
+	local previousSetDisabled = control.SetDisabled
+	if previousSetDisabled then
+		function control:SetDisabled(value)
+			previousSetDisabled(self, value)
+			ApplyCleanToggleVisual(self)
+			return self
+		end
+	end
+	ApplyCleanToggleVisual(control)
+	return control
+end
+
+local function ApplyCleanSliderVisual(control, config)
+	if not control then
+		return
+	end
+	local trackY = config and config.Description and 54 or 38
+	if control.Track then
+		control.Track.Size = UDim2.new(1, -22, 0, 8)
+		control.Track.Position = UDim2.fromOffset(11, trackY)
+		control.Track.BackgroundColor3 = Google.Theme.Border
+		control.Track.BackgroundTransparency = control.Disabled and 0.45 or 0
+		control.Track.BorderSizePixel = 0
+		control.Track.ClipsDescendants = false
+		SetFullCorner(control.Track)
+		RemoveVisualChildren(control.Track, "UIStroke")
+	end
+	if control.Fill then
+		control.Fill.BackgroundColor3 = Google.Theme.Primary
+		control.Fill.BackgroundTransparency = 0
+		control.Fill.BorderSizePixel = 0
+		SetFullCorner(control.Fill)
+		RemoveVisualChildren(control.Fill, "UIGradient")
+	end
+	if control.Knob then
+		control.Knob.Size = UDim2.fromOffset(18, 18)
+		control.Knob.BackgroundColor3 = Google.Theme.Primary
+		control.Knob.BackgroundTransparency = 0
+		control.Knob.BorderSizePixel = 0
+		SetFullCorner(control.Knob)
+		RemoveVisualChildren(control.Knob, "UIStroke")
+		RemoveVisualChildren(control.Knob, "UIGradient")
+	end
+	if control.KnobDot then
+		pcall(function()
+			control.KnobDot:Destroy()
+		end)
+		control.KnobDot = nil
+	end
+	control.KnobStroke = nil
+	control.TrackStroke = nil
+	control.FillGradient = nil
+	control.KnobScale = nil
+end
+
+local BaseCleanSliderCreate = Section.CreateSlider
+function Section:CreateSlider(config)
+	config = config or {}
+	local control = BaseCleanSliderCreate(self, config)
+	ApplyCleanSliderVisual(control, config)
+	local function formatted(self)
+		if type(self.ValueFormat) == "function" then
+			local ok, result = pcall(self.ValueFormat, self.Value)
+			if ok then
+				return tostring(result)
+			end
+		end
+		return tostring(self.Prefix or "") .. tostring(self.Value) .. tostring(self.Suffix or "")
+	end
+	function control:UpdateVisual()
+		local alpha = 0
+		if self.Max ~= self.Min then
+			alpha = math.clamp((self.Value - self.Min) / (self.Max - self.Min), 0, 1)
+		end
+		if self.ValueLabel then
+			self.ValueLabel.Text = formatted(self)
+		end
+		local duration = self.Dragging and 0.03 or Motion.Base
+		if self.Fill then
+			Tween(self.Fill, {Size = UDim2.fromScale(alpha, 1)}, duration)
+		end
+		if self.Knob then
+			Tween(self.Knob, {Position = UDim2.fromScale(alpha, 0.5)}, duration)
+		end
+	end
+	local previousSet = control.Set
+	function control:Set(value)
+		if self.Disabled then
+			return self
+		end
+		if self.Step and tonumber(self.Step) and tonumber(self.Step) > 0 then
+			local step = tonumber(self.Step)
+			value = self.Min + math.floor(((value - self.Min) / step) + 0.5) * step
+		end
+		local precision = self.Precision or 0
+		value = math.clamp(value, self.Min, self.Max)
+		if precision <= 0 then
+			value = math.floor(value + 0.5)
+		else
+			local power = 10 ^ precision
+			value = math.floor(value * power + 0.5) / power
+		end
+		self.Value = value
+		self:UpdateVisual()
+		self.Callback(self.Value)
+		return self
+	end
+	local previousApply = control.ApplyTheme
+	function control:ApplyTheme()
+		if previousApply then previousApply(self) end
+		ApplyCleanSliderVisual(self, config)
+		self:UpdateVisual()
+	end
+	local previousSetDisabled = control.SetDisabled
+	if previousSetDisabled then
+		function control:SetDisabled(value)
+			previousSetDisabled(self, value)
+			ApplyCleanSliderVisual(self, config)
+			self:UpdateVisual()
+			return self
+		end
+	end
+	control:UpdateVisual()
+	return control
+end
+
 
 return Google
