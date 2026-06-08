@@ -1,23 +1,20 @@
 local Google = {}
 Google.__index = Google
 
-local Services = setmetatable({}, {
-	__index = function(self, name)
-		local service = game:GetService(name)
-		rawset(self, name, service)
-		return service
-	end
-})
+local function getService(name)
+	local service = game:GetService(name)
+	return if cloneref then cloneref(service) else service
+end
 
-local TweenService = Services.TweenService
-local UserInputService = Services.UserInputService
-local Players = Services.Players
-local CoreGui = Services.CoreGui
-local Workspace = Services.Workspace
+local TweenService = getService("TweenService")
+local UserInputService = getService("UserInputService")
+local Players = getService("Players")
+local CoreGui = getService("CoreGui")
+local Workspace = getService("Workspace")
 
 local LocalPlayer = Players.LocalPlayer
 
-local function SafeParent()
+local function getGuiHost()
 	if type(gethui) == "function" then
 		local ok, result = pcall(gethui)
 		if ok and result then
@@ -31,7 +28,7 @@ local function SafeParent()
 	return CoreGui
 end
 
-local function CleanupExistingInterfaces(primaryParent)
+local function clearOldWindows(primaryParent)
 	local targets = {}
 	local function add(parent)
 		if parent and not targets[parent] then
@@ -65,7 +62,7 @@ local function create(className, properties)
 	return object
 end
 
-local function Corner(parent, radius)
+local function round(parent, radius)
 	local corner = create("UICorner", {
 		CornerRadius = UDim.new(0, radius or 6),
 		Parent = parent
@@ -73,7 +70,7 @@ local function Corner(parent, radius)
 	return corner
 end
 
-local function FullCorner(parent)
+local function roundFull(parent)
 	local corner = create("UICorner", {
 		CornerRadius = UDim.new(1, 0),
 		Parent = parent
@@ -81,7 +78,7 @@ local function FullCorner(parent)
 	return corner
 end
 
-local function Stroke(parent, color, transparency, thickness)
+local function outline(parent, color, transparency, thickness)
 	local stroke = create("UIStroke", {
 		Color = color,
 		Transparency = transparency or 0,
@@ -92,7 +89,7 @@ local function Stroke(parent, color, transparency, thickness)
 	return stroke
 end
 
-local function Padding(parent, left, right, top, bottom)
+local function pad(parent, left, right, top, bottom)
 	local padding = create("UIPadding", {
 		PaddingLeft = UDim.new(0, left or 0),
 		PaddingRight = UDim.new(0, right or 0),
@@ -103,7 +100,7 @@ local function Padding(parent, left, right, top, bottom)
 	return padding
 end
 
-local Motion = {
+local motion = {
 	Fast = 0.12,
 	Base = 0.18,
 	Slow = 0.26,
@@ -112,20 +109,20 @@ local Motion = {
 	Direction = Enum.EasingDirection.Out
 }
 
-local ActiveTweens = setmetatable({}, {__mode = "k"})
+local runningTweens = setmetatable({}, {__mode = "k"})
 
-local function Tween(object, properties, duration, style, direction, callback)
+local function animate(object, properties, duration, style, direction, callback)
 	if not object then
 		return nil
 	end
-	if ActiveTweens[object] then
+	if runningTweens[object] then
 		pcall(function()
-			ActiveTweens[object]:Cancel()
+			runningTweens[object]:Cancel()
 		end)
-		ActiveTweens[object] = nil
+		runningTweens[object] = nil
 	end
 	local ok, tween = pcall(function()
-		return TweenService:Create(object, TweenInfo.new(duration or Motion.Base, style or Motion.Style, direction or Motion.Direction), properties)
+		return TweenService:Create(object, TweenInfo.new(duration or motion.Base, style or motion.Style, direction or motion.Direction), properties)
 	end)
 	if not ok or not tween then
 		for property, value in pairs(properties) do
@@ -138,14 +135,14 @@ local function Tween(object, properties, duration, style, direction, callback)
 		end
 		return nil
 	end
-	ActiveTweens[object] = tween
+	runningTweens[object] = tween
 	local connection
 	connection = tween.Completed:Connect(function()
 		if connection then
 			connection:Disconnect()
 		end
-		if ActiveTweens[object] == tween then
-			ActiveTweens[object] = nil
+		if runningTweens[object] == tween then
+			runningTweens[object] = nil
 		end
 		if callback then
 			callback()
@@ -155,20 +152,20 @@ local function Tween(object, properties, duration, style, direction, callback)
 	return tween
 end
 
-local function ScaleUDim2(size, offset)
+local function shrinkOffsetSize(size, offset)
 	if size.X.Scale == 0 and size.Y.Scale == 0 then
 		return UDim2.fromOffset(math.max(0, size.X.Offset + offset), math.max(0, size.Y.Offset + offset))
 	end
 	return size
 end
 
-local function Connect(list, signal, callback)
+local function bind(list, signal, callback)
 	local connection = signal:Connect(callback)
 	table.insert(list, connection)
 	return connection
 end
 
-local function DisconnectAll(list)
+local function disconnectAll(list)
 	for _, connection in ipairs(list) do
 		pcall(function()
 			connection:Disconnect()
@@ -177,11 +174,11 @@ local function DisconnectAll(list)
 	table.clear(list)
 end
 
-local function IsColor(value)
+local function isColor(value)
 	return typeof(value) == "Color3"
 end
 
-local function ExtractImageAssetId(value)
+local function assetIdFromImage(value)
 	if typeof(value) == "number" then
 		return tostring(value)
 	end
@@ -203,7 +200,7 @@ local function ExtractImageAssetId(value)
 	return nil
 end
 
-local function ResolveImageSource(value)
+local function imageSource(value)
 	if typeof(value) == "number" then
 		return "rbxassetid://" .. tostring(value)
 	end
@@ -219,15 +216,15 @@ local function ResolveImageSource(value)
 	return value
 end
 
-local function ResolveImageThumbnail(value)
-	local id = ExtractImageAssetId(value)
+local function imageThumbnail(value)
+	local id = assetIdFromImage(value)
 	if not id then
 		return ""
 	end
 	return "rbxthumb://type=Asset&id=" .. id .. "&w=420&h=420"
 end
 
-local function ResolveImageScaleType(value)
+local function imageScaleType(value)
 	if typeof(value) == "EnumItem" then
 		return value
 	end
@@ -245,7 +242,7 @@ local function ResolveImageScaleType(value)
 	return Enum.ScaleType.Fit
 end
 
-local function GetViewportSize()
+local function viewportSize()
 	local camera = Workspace.CurrentCamera
 	if camera then
 		return camera.ViewportSize
@@ -253,23 +250,23 @@ local function GetViewportSize()
 	return Vector2.new(1280, 720)
 end
 
-local function DetectMobileDevice()
-	local viewport = GetViewportSize()
+local function isMobileDevice()
+	local viewport = viewportSize()
 	local shortestSide = math.min(viewport.X, viewport.Y)
 	return UserInputService.TouchEnabled and (not UserInputService.KeyboardEnabled or shortestSide <= 820)
 end
 
-local function ResolveMobileWindowSize(config)
+local function mobileWindowSize(config)
 	if config and config.MobileSize then
 		return config.MobileSize
 	end
-	local viewport = GetViewportSize()
+	local viewport = viewportSize()
 	local width = math.clamp(viewport.X - 20, 320, 520)
 	local height = math.clamp(viewport.Y - 20, 360, 700)
 	return UDim2.fromOffset(width, height)
 end
 
-local function Blend(colorA, colorB, alpha)
+local function blend(colorA, colorB, alpha)
 	return colorA:Lerp(colorB, alpha)
 end
 
@@ -362,6 +359,94 @@ Google.Themes = {
 		Input = Color3.fromRGB(255, 255, 255),
 		Hover = Color3.fromRGB(240, 249, 244),
 		Shadow = Color3.fromRGB(15, 23, 42)
+	},
+	DarkGoogle = {
+		Window = Color3.fromRGB(18, 20, 24),
+		Topbar = Color3.fromRGB(23, 26, 31),
+		Sidebar = Color3.fromRGB(21, 24, 29),
+		Page = Color3.fromRGB(14, 16, 20),
+		Card = Color3.fromRGB(26, 30, 36),
+		CardAlt = Color3.fromRGB(31, 36, 43),
+		Text = Color3.fromRGB(238, 242, 247),
+		Muted = Color3.fromRGB(156, 166, 182),
+		Subtle = Color3.fromRGB(104, 116, 134),
+		Border = Color3.fromRGB(43, 49, 59),
+		BorderStrong = Color3.fromRGB(63, 71, 85),
+		Primary = Color3.fromRGB(66, 133, 244),
+		PrimaryHover = Color3.fromRGB(95, 157, 247),
+		PrimarySoft = Color3.fromRGB(24, 47, 86),
+		Success = Color3.fromRGB(52, 168, 83),
+		Warning = Color3.fromRGB(251, 188, 4),
+		Danger = Color3.fromRGB(234, 67, 53),
+		Input = Color3.fromRGB(18, 21, 26),
+		Hover = Color3.fromRGB(35, 40, 48),
+		Shadow = Color3.fromRGB(0, 0, 0)
+	},
+	DarkRed = {
+		Window = Color3.fromRGB(24, 18, 18),
+		Topbar = Color3.fromRGB(31, 22, 21),
+		Sidebar = Color3.fromRGB(29, 20, 20),
+		Page = Color3.fromRGB(18, 13, 13),
+		Card = Color3.fromRGB(36, 26, 25),
+		CardAlt = Color3.fromRGB(43, 31, 30),
+		Text = Color3.fromRGB(248, 238, 237),
+		Muted = Color3.fromRGB(187, 153, 150),
+		Subtle = Color3.fromRGB(137, 98, 95),
+		Border = Color3.fromRGB(64, 42, 40),
+		BorderStrong = Color3.fromRGB(92, 57, 54),
+		Primary = Color3.fromRGB(234, 67, 53),
+		PrimaryHover = Color3.fromRGB(247, 99, 87),
+		PrimarySoft = Color3.fromRGB(83, 31, 28),
+		Success = Color3.fromRGB(52, 168, 83),
+		Warning = Color3.fromRGB(251, 188, 4),
+		Danger = Color3.fromRGB(255, 96, 84),
+		Input = Color3.fromRGB(24, 17, 17),
+		Hover = Color3.fromRGB(52, 34, 32),
+		Shadow = Color3.fromRGB(0, 0, 0)
+	},
+	DarkYellow = {
+		Window = Color3.fromRGB(23, 21, 16),
+		Topbar = Color3.fromRGB(31, 28, 20),
+		Sidebar = Color3.fromRGB(28, 25, 18),
+		Page = Color3.fromRGB(17, 15, 11),
+		Card = Color3.fromRGB(35, 31, 22),
+		CardAlt = Color3.fromRGB(42, 37, 26),
+		Text = Color3.fromRGB(247, 242, 229),
+		Muted = Color3.fromRGB(184, 169, 128),
+		Subtle = Color3.fromRGB(135, 117, 78),
+		Border = Color3.fromRGB(64, 56, 36),
+		BorderStrong = Color3.fromRGB(92, 78, 46),
+		Primary = Color3.fromRGB(251, 188, 4),
+		PrimaryHover = Color3.fromRGB(255, 207, 68),
+		PrimarySoft = Color3.fromRGB(81, 61, 17),
+		Success = Color3.fromRGB(52, 168, 83),
+		Warning = Color3.fromRGB(255, 207, 68),
+		Danger = Color3.fromRGB(234, 67, 53),
+		Input = Color3.fromRGB(24, 21, 15),
+		Hover = Color3.fromRGB(50, 43, 27),
+		Shadow = Color3.fromRGB(0, 0, 0)
+	},
+	DarkGreen = {
+		Window = Color3.fromRGB(16, 22, 18),
+		Topbar = Color3.fromRGB(21, 30, 24),
+		Sidebar = Color3.fromRGB(19, 27, 22),
+		Page = Color3.fromRGB(12, 17, 14),
+		Card = Color3.fromRGB(24, 34, 28),
+		CardAlt = Color3.fromRGB(29, 42, 34),
+		Text = Color3.fromRGB(236, 246, 239),
+		Muted = Color3.fromRGB(146, 181, 157),
+		Subtle = Color3.fromRGB(96, 130, 106),
+		Border = Color3.fromRGB(37, 57, 45),
+		BorderStrong = Color3.fromRGB(52, 82, 63),
+		Primary = Color3.fromRGB(52, 168, 83),
+		PrimaryHover = Color3.fromRGB(73, 194, 105),
+		PrimarySoft = Color3.fromRGB(21, 67, 39),
+		Success = Color3.fromRGB(52, 168, 83),
+		Warning = Color3.fromRGB(251, 188, 4),
+		Danger = Color3.fromRGB(234, 67, 53),
+		Input = Color3.fromRGB(14, 21, 17),
+		Hover = Color3.fromRGB(31, 48, 38),
+		Shadow = Color3.fromRGB(0, 0, 0)
 	}
 }
 Google.ActiveTheme = "Google"
@@ -540,8 +625,8 @@ function Google:CreateWindow(config)
 	self.DesktopSize = config.Size or UDim2.fromOffset(620, 420)
 	self.MobileSize = config.MobileSize
 	self.AutoMobile = config.Mobile == nil
-	self.IsMobile = config.Mobile == true or (config.Mobile == nil and DetectMobileDevice())
-	self.Size = self.IsMobile and ResolveMobileWindowSize(config) or self.DesktopSize
+	self.IsMobile = config.Mobile == true or (config.Mobile == nil and isMobileDevice())
+	self.Size = self.IsMobile and mobileWindowSize(config) or self.DesktopSize
 	self.Position = config.Position
 	self.Tabs = {}
 	self.ActiveTab = nil
@@ -551,9 +636,9 @@ function Google:CreateWindow(config)
 	self.Visible = true
 	self.NotifySide = config.NotifySide or "Right"
 
-	local parent = config.Parent or SafeParent()
+	local parent = config.Parent or getGuiHost()
 	if config.AllowMultiple ~= true then
-		CleanupExistingInterfaces(parent)
+		clearOldWindows(parent)
 	end
 
 	local gui = create("ScreenGui", {
@@ -567,7 +652,7 @@ function Google:CreateWindow(config)
 
 	local main = create("Frame", {
 		Name = "Window",
-		Size = ScaleUDim2(self.Size, -14),
+		Size = shrinkOffsetSize(self.Size, -14),
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = self.Position or UDim2.fromScale(0.5, 0.5),
 		BackgroundTransparency = 1,
@@ -586,9 +671,9 @@ function Google:CreateWindow(config)
 		ZIndex = 2,
 		Parent = main
 	})
-	self.BodyCorner = Corner(body, 20)
+	self.BodyCorner = round(body, 20)
 	self.Body = body
-	self.MainStroke = Stroke(body, Google.Theme.Border, 1, 0)
+	self.MainStroke = outline(body, Google.Theme.Border, 1, 0)
 
 	local topbar = create("Frame", {
 		Name = "Topbar",
@@ -598,7 +683,7 @@ function Google:CreateWindow(config)
 		Parent = body
 	})
 	self.Topbar = topbar
-	self.TopbarCorner = Corner(topbar, 0)
+	self.TopbarCorner = round(topbar, 0)
 
 	local topbarLine = create("Frame", {
 		Name = "TopbarLine",
@@ -618,7 +703,7 @@ function Google:CreateWindow(config)
 		BorderSizePixel = 0,
 		Parent = topbar
 	})
-	Corner(titleIconWrap, 9)
+	round(titleIconWrap, 9)
 	self.TitleIconWrap = titleIconWrap
 	self.TitleIcon = Google.CreateIcon(self.Icon, 19, Google.Theme.Primary, titleIconWrap, {
 		Position = UDim2.fromScale(0.5, 0.5),
@@ -676,7 +761,7 @@ function Google:CreateWindow(config)
 		AutoButtonColor = false,
 		Parent = controls
 	})
-	Corner(minimizeButton, 7)
+	round(minimizeButton, 7)
 	self.MinimizeButton = minimizeButton
 	self.MinimizeIcon = Google.CreateIcon("minus", 16, Google.Theme.Muted, minimizeButton, {
 		AnchorPoint = Vector2.new(0.5, 0.5),
@@ -694,36 +779,36 @@ function Google:CreateWindow(config)
 		AutoButtonColor = false,
 		Parent = controls
 	})
-	Corner(closeButton, 7)
+	round(closeButton, 7)
 	self.CloseButton = closeButton
 	self.CloseIcon = Google.CreateIcon("x", 15, Google.Theme.Muted, closeButton, {
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.5)
 	})
 
-	Connect(self.Connections, minimizeButton.MouseButton1Click, function()
+	bind(self.Connections, minimizeButton.MouseButton1Click, function()
 		if self.Minimized then
 			self:Restore()
 		else
 			self:Minimize()
 		end
 	end)
-	Connect(self.Connections, closeButton.MouseButton1Click, function()
+	bind(self.Connections, closeButton.MouseButton1Click, function()
 		self:Destroy()
 	end)
-	Connect(self.Connections, minimizeButton.MouseEnter, function()
-		Tween(minimizeButton, {BackgroundTransparency = 0}, Motion.Fast)
+	bind(self.Connections, minimizeButton.MouseEnter, function()
+		animate(minimizeButton, {BackgroundTransparency = 0}, motion.Fast)
 	end)
-	Connect(self.Connections, minimizeButton.MouseLeave, function()
-		Tween(minimizeButton, {BackgroundTransparency = 1}, Motion.Fast)
+	bind(self.Connections, minimizeButton.MouseLeave, function()
+		animate(minimizeButton, {BackgroundTransparency = 1}, motion.Fast)
 	end)
-	Connect(self.Connections, closeButton.MouseEnter, function()
+	bind(self.Connections, closeButton.MouseEnter, function()
 		Google.SetIconColor(self.CloseIcon, Color3.new(1, 1, 1))
-		Tween(closeButton, {BackgroundColor3 = Google.Theme.Danger, BackgroundTransparency = 0}, Motion.Fast)
+		animate(closeButton, {BackgroundColor3 = Google.Theme.Danger, BackgroundTransparency = 0}, motion.Fast)
 	end)
-	Connect(self.Connections, closeButton.MouseLeave, function()
+	bind(self.Connections, closeButton.MouseLeave, function()
 		Google.SetIconColor(self.CloseIcon, Google.Theme.Muted)
-		Tween(closeButton, {BackgroundColor3 = Google.Theme.Hover, BackgroundTransparency = 1}, Motion.Fast)
+		animate(closeButton, {BackgroundColor3 = Google.Theme.Hover, BackgroundTransparency = 1}, motion.Fast)
 	end)
 
 	local sidebar = create("Frame", {
@@ -760,7 +845,7 @@ function Google:CreateWindow(config)
 
 	local tabLayout = create("UIListLayout", {
 		SortOrder = Enum.SortOrder.LayoutOrder,
-		Padding = UDim.new(0, 4),
+		pad = UDim.new(0, 4),
 		Parent = tabList
 	})
 	self.TabLayout = tabLayout
@@ -779,7 +864,7 @@ function Google:CreateWindow(config)
 	local dragging = false
 	local dragStart
 	local startPosition
-	Connect(self.Connections, topbar.InputBegan, function(input)
+	bind(self.Connections, topbar.InputBegan, function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 			dragging = true
 			dragStart = input.Position
@@ -795,20 +880,20 @@ function Google:CreateWindow(config)
 			end)
 		end
 	end)
-	Connect(self.Connections, UserInputService.InputChanged, function(input)
+	bind(self.Connections, UserInputService.InputChanged, function(input)
 		if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
 			local delta = input.Position - dragStart
 			main.Position = UDim2.new(startPosition.X.Scale, startPosition.X.Offset + delta.X, startPosition.Y.Scale, startPosition.Y.Offset + delta.Y)
 		end
 	end)
 
-	Connect(self.Connections, tabLayout:GetPropertyChangedSignal("AbsoluteContentSize"), function()
+	bind(self.Connections, tabLayout:GetPropertyChangedSignal("AbsoluteContentSize"), function()
 		self:UpdateTabListCanvas()
 	end)
 
 	local function bindViewport(camera)
 		if camera then
-			Connect(self.Connections, camera:GetPropertyChangedSignal("ViewportSize"), function()
+			bind(self.Connections, camera:GetPropertyChangedSignal("ViewportSize"), function()
 				if self.AutoMobile then
 					self:UpdateResponsiveLayout()
 				end
@@ -816,7 +901,7 @@ function Google:CreateWindow(config)
 		end
 	end
 	bindViewport(Workspace.CurrentCamera)
-	Connect(self.Connections, Workspace:GetPropertyChangedSignal("CurrentCamera"), function()
+	bind(self.Connections, Workspace:GetPropertyChangedSignal("CurrentCamera"), function()
 		bindViewport(Workspace.CurrentCamera)
 		if self.AutoMobile then
 			self:UpdateResponsiveLayout(true)
@@ -826,7 +911,7 @@ function Google:CreateWindow(config)
 	table.insert(Google.Windows, self)
 	self:UpdateResponsiveLayout(true)
 	self:ApplyTheme()
-	Tween(main, {Size = self.Size}, Motion.Slow, Enum.EasingStyle.Quint)
+	animate(main, {Size = self.Size}, motion.Slow, Enum.EasingStyle.Quint)
 	return self
 end
 
@@ -853,7 +938,7 @@ function Window:CreateTab(config)
 		AutoButtonColor = false,
 		Parent = self.TabList
 	})
-	Corner(button, 8)
+	round(button, 8)
 	tab.Button = button
 
 	local accent = create("Frame", {
@@ -865,7 +950,7 @@ function Window:CreateTab(config)
 		Visible = false,
 		Parent = button
 	})
-	Corner(accent, 4)
+	round(accent, 4)
 	tab.Accent = accent
 
 	tab.IconLabel = Google.CreateIcon(tab.Icon, 17, Google.Theme.Muted, button, {
@@ -896,27 +981,27 @@ function Window:CreateTab(config)
 		Visible = false,
 		Parent = self.PageWrap
 	})
-	Padding(page, 14, 14, 14, 14)
+	pad(page, 14, 14, 14, 14)
 	tab.Page = page
 	tab.Layout = create("UIListLayout", {
 		SortOrder = Enum.SortOrder.LayoutOrder,
-		Padding = UDim.new(0, 10),
+		pad = UDim.new(0, 10),
 		Parent = page
 	})
-	Connect(tab.Connections, tab.Layout:GetPropertyChangedSignal("AbsoluteContentSize"), function()
+	bind(tab.Connections, tab.Layout:GetPropertyChangedSignal("AbsoluteContentSize"), function()
 		tab:UpdateCanvas()
 	end)
-	Connect(tab.Connections, button.MouseButton1Click, function()
+	bind(tab.Connections, button.MouseButton1Click, function()
 		self:SelectTab(tab)
 	end)
-	Connect(tab.Connections, button.MouseEnter, function()
+	bind(tab.Connections, button.MouseEnter, function()
 		if not tab.Active then
-			Tween(button, {BackgroundTransparency = 0}, Motion.Fast)
+			animate(button, {BackgroundTransparency = 0}, motion.Fast)
 		end
 	end)
-	Connect(tab.Connections, button.MouseLeave, function()
+	bind(tab.Connections, button.MouseLeave, function()
 		if not tab.Active then
-			Tween(button, {BackgroundTransparency = 1}, Motion.Fast)
+			animate(button, {BackgroundTransparency = 1}, motion.Fast)
 		end
 	end)
 
@@ -954,20 +1039,20 @@ function Tab:SetActive(active)
 		if self.Window.IsMobile then
 			self.Accent.Size = UDim2.new(0, 8, 0, 3)
 			self.Accent.Position = UDim2.new(0.5, -4, 1, -4)
-			Tween(self.Accent, {BackgroundTransparency = 0, Size = UDim2.new(0, 28, 0, 3), Position = UDim2.new(0.5, -14, 1, -4)}, Motion.Base)
+			animate(self.Accent, {BackgroundTransparency = 0, Size = UDim2.new(0, 28, 0, 3), Position = UDim2.new(0.5, -14, 1, -4)}, motion.Base)
 		else
 			self.Accent.Size = UDim2.new(0, 3, 0, 8)
 			self.Accent.Position = UDim2.fromOffset(0, 9)
-			Tween(self.Accent, {BackgroundTransparency = 0, Size = UDim2.new(0, 3, 0, 18)}, Motion.Base)
+			animate(self.Accent, {BackgroundTransparency = 0, Size = UDim2.new(0, 3, 0, 18)}, motion.Base)
 		end
-		Tween(self.Page, {Position = UDim2.fromOffset(0, 0)}, Motion.Base)
-		Tween(self.Button, {BackgroundTransparency = 0, BackgroundColor3 = Google.Theme.PrimarySoft}, Motion.Base)
+		animate(self.Page, {Position = UDim2.fromOffset(0, 0)}, motion.Base)
+		animate(self.Button, {BackgroundTransparency = 0, BackgroundColor3 = Google.Theme.PrimarySoft}, motion.Base)
 		self.TextLabel.TextColor3 = Google.Theme.Primary
 		Google.SetIconColor(self.IconLabel, Google.Theme.Primary)
 	else
-		Tween(self.Button, {BackgroundTransparency = 1}, Motion.Fast)
+		animate(self.Button, {BackgroundTransparency = 1}, motion.Fast)
 		local inactiveAccentSize = self.Window.IsMobile and UDim2.new(0, 8, 0, 3) or UDim2.new(0, 3, 0, 8)
-		Tween(self.Accent, {BackgroundTransparency = 1, Size = inactiveAccentSize}, Motion.Fast, nil, nil, function()
+		animate(self.Accent, {BackgroundTransparency = 1, Size = inactiveAccentSize}, motion.Fast, nil, nil, function()
 			if not self.Active then
 				self.Accent.Visible = false
 			end
@@ -1000,9 +1085,9 @@ function Tab:CreateSection(config)
 		ClipsDescendants = true,
 		Parent = self.Page
 	})
-	Corner(frame, 10)
+	round(frame, 10)
 	section.Instance = frame
-	section.Stroke = Stroke(frame, Google.Theme.Border, 0.05, 1)
+	section.outline = outline(frame, Google.Theme.Border, 0.05, 1)
 
 	local header = create("TextButton", {
 		Name = "Header",
@@ -1053,17 +1138,17 @@ function Tab:CreateSection(config)
 		Visible = not section.Collapsed,
 		Parent = frame
 	})
-	Padding(content, 10, 10, 0, 10)
+	pad(content, 10, 10, 0, 10)
 	section.Content = content
 	section.Layout = create("UIListLayout", {
 		SortOrder = Enum.SortOrder.LayoutOrder,
-		Padding = UDim.new(0, 7),
+		pad = UDim.new(0, 7),
 		Parent = content
 	})
-	Connect(section.Connections, section.Layout:GetPropertyChangedSignal("AbsoluteContentSize"), function()
+	bind(section.Connections, section.Layout:GetPropertyChangedSignal("AbsoluteContentSize"), function()
 		section:Refresh()
 	end)
-	Connect(section.Connections, header.MouseButton1Click, function()
+	bind(section.Connections, header.MouseButton1Click, function()
 		section:SetCollapsed(not section.Collapsed)
 	end)
 
@@ -1098,9 +1183,9 @@ function Tab:GetStandaloneSection()
 		LayoutOrder = -1000,
 		Parent = self.Page
 	})
-	Corner(frame, 10)
+	round(frame, 10)
 	section.Instance = frame
-	section.Stroke = Stroke(frame, Google.Theme.Border, 0.05, 1)
+	section.outline = outline(frame, Google.Theme.Border, 0.05, 1)
 	local content = create("Frame", {
 		Name = "Content",
 		Position = UDim2.fromOffset(0, 0),
@@ -1109,11 +1194,11 @@ function Tab:GetStandaloneSection()
 		BorderSizePixel = 0,
 		Parent = frame
 	})
-	Padding(content, 10, 10, 10, 10)
+	pad(content, 10, 10, 10, 10)
 	section.Content = content
 	section.Layout = create("UIListLayout", {
 		SortOrder = Enum.SortOrder.LayoutOrder,
-		Padding = UDim.new(0, 7),
+		pad = UDim.new(0, 7),
 		Parent = content
 	})
 	function section:Refresh(animated)
@@ -1122,7 +1207,7 @@ function Tab:GetStandaloneSection()
 		self.Content.Size = UDim2.new(1, 0, 0, contentHeight)
 		local targetSize = UDim2.new(1, 0, 0, contentHeight)
 		if animated then
-			Tween(self.Instance, {Size = targetSize}, Motion.Base)
+			animate(self.Instance, {Size = targetSize}, motion.Base)
 		else
 			self.Instance.Size = targetSize
 		end
@@ -1130,14 +1215,14 @@ function Tab:GetStandaloneSection()
 	end
 	function section:ApplyTheme()
 		self.Instance.BackgroundColor3 = Google.Theme.Card
-		self.Stroke.Color = Google.Theme.Border
+		self.outline.Color = Google.Theme.Border
 		for _, control in ipairs(self.Controls) do
 			if control.ApplyTheme then
 				control:ApplyTheme()
 			end
 		end
 	end
-	Connect(section.Connections, section.Layout:GetPropertyChangedSignal("AbsoluteContentSize"), function()
+	bind(section.Connections, section.Layout:GetPropertyChangedSignal("AbsoluteContentSize"), function()
 		section:Refresh()
 	end)
 	self.StandaloneSection = section
@@ -1293,7 +1378,7 @@ function Section:SetCollapsed(collapsed)
 		self.Arrow.ImageRectOffset = asset.Offset
 		self.Arrow.ImageRectSize = asset.Size
 	end
-	Tween(self.Arrow, {Rotation = collapsed and -90 or 0}, Motion.Base)
+	animate(self.Arrow, {Rotation = collapsed and -90 or 0}, motion.Base)
 	self:Refresh(true)
 end
 
@@ -1304,7 +1389,7 @@ function Section:Refresh(animated)
 	self.Content.Size = UDim2.new(1, 0, 0, contentHeight)
 	local targetSize = UDim2.new(1, 0, 0, headerHeight + contentHeight)
 	if animated then
-		Tween(self.Instance, {Size = targetSize}, Motion.Base, Enum.EasingStyle.Quint, nil, function()
+		animate(self.Instance, {Size = targetSize}, motion.Base, Enum.EasingStyle.Quint, nil, function()
 			if self.Collapsed then
 				self.Content.Visible = false
 			end
@@ -1317,7 +1402,7 @@ end
 
 function Section:ApplyTheme()
 	self.Instance.BackgroundColor3 = Google.Theme.Card
-	self.Stroke.Color = Google.Theme.Border
+	self.outline.Color = Google.Theme.Border
 	self.TitleLabel.TextColor3 = Google.Theme.Text
 	self.DescriptionLabel.TextColor3 = Google.Theme.Muted
 	Google.SetIconColor(self.Arrow, Google.Theme.Muted)
@@ -1365,7 +1450,7 @@ function Section:CreateButton(config)
 		AutoButtonColor = false,
 		Parent = self.Instance
 	})
-	Corner(button, 8)
+	round(button, 8)
 	self.Button = button
 	local iconOffset = self.Icon and 34 or 12
 	if self.Icon then
@@ -1398,20 +1483,20 @@ function Section:CreateButton(config)
 			Parent = button
 		})
 	end
-	Connect(self.Connections, button.MouseButton1Click, function()
+	bind(self.Connections, button.MouseButton1Click, function()
 		self.Callback()
 	end)
-	Connect(self.Connections, button.MouseButton1Down, function()
-		Tween(button, {BackgroundColor3 = Google.Theme.PrimaryHover}, Motion.Fast)
+	bind(self.Connections, button.MouseButton1Down, function()
+		animate(button, {BackgroundColor3 = Google.Theme.PrimaryHover}, motion.Fast)
 	end)
-	Connect(self.Connections, button.MouseButton1Up, function()
-		Tween(button, {BackgroundColor3 = Google.Theme.Primary}, Motion.Fast)
+	bind(self.Connections, button.MouseButton1Up, function()
+		animate(button, {BackgroundColor3 = Google.Theme.Primary}, motion.Fast)
 	end)
-	Connect(self.Connections, button.MouseEnter, function()
-		Tween(button, {BackgroundColor3 = Google.Theme.PrimaryHover}, Motion.Fast)
+	bind(self.Connections, button.MouseEnter, function()
+		animate(button, {BackgroundColor3 = Google.Theme.PrimaryHover}, motion.Fast)
 	end)
-	Connect(self.Connections, button.MouseLeave, function()
-		Tween(button, {BackgroundColor3 = Google.Theme.Primary}, Motion.Fast)
+	bind(self.Connections, button.MouseLeave, function()
+		animate(button, {BackgroundColor3 = Google.Theme.Primary}, motion.Fast)
 	end)
 	function self:ApplyTheme()
 		self.Button.BackgroundColor3 = Google.Theme.Primary
@@ -1466,15 +1551,15 @@ function Section:CreateToggle(config)
 		ClipsDescendants = true,
 		Parent = self.Instance
 	})
-	Corner(switch, 13)
+	round(switch, 13)
 	self.Switch = switch
-	self.SwitchStroke = Stroke(switch, self.Value and Google.Theme.PrimaryHover or Google.Theme.BorderStrong, 0.2, 1)
+	self.SwitchStroke = outline(switch, self.Value and Google.Theme.PrimaryHover or Google.Theme.BorderStrong, 0.2, 1)
 	self.SwitchStroke.Name = "ToggleStroke"
 	self.SwitchGradient = create("UIGradient", {
-		Name = "EnhancedGradient",
+		Name = "Gradient",
 		Rotation = 0,
 		Color = ColorSequence.new({
-			ColorSequenceKeypoint.new(0, self.Value and Blend(Google.Theme.Primary, Color3.new(1, 1, 1), 0.14) or Blend(Google.Theme.BorderStrong, Color3.new(1, 1, 1), 0.1)),
+			ColorSequenceKeypoint.new(0, self.Value and blend(Google.Theme.Primary, Color3.new(1, 1, 1), 0.14) or blend(Google.Theme.BorderStrong, Color3.new(1, 1, 1), 0.1)),
 			ColorSequenceKeypoint.new(1, self.Value and Google.Theme.Primary or Google.Theme.BorderStrong)
 		}),
 		Parent = switch
@@ -1486,20 +1571,20 @@ function Section:CreateToggle(config)
 		BorderSizePixel = 0,
 		Parent = switch
 	})
-	Corner(self.Knob, 11)
-	self.KnobStroke = Stroke(self.Knob, Blend(Google.Theme.Border, Color3.new(1, 1, 1), 0.45), 0.15, 1)
+	round(self.Knob, 11)
+	self.KnobStroke = outline(self.Knob, blend(Google.Theme.Border, Color3.new(1, 1, 1), 0.45), 0.15, 1)
 	self.KnobStroke.Name = "KnobStroke"
 	function self:Set(value)
 		self.Value = value and true or false
 		local base = self.Value and Google.Theme.Primary or Google.Theme.BorderStrong
-		Tween(self.Switch, {BackgroundColor3 = base}, Motion.Base)
-		Tween(self.Knob, {Position = self.Value and UDim2.new(1, -24, 0.5, -11) or UDim2.fromOffset(2, 2)}, Motion.Base)
+		animate(self.Switch, {BackgroundColor3 = base}, motion.Base)
+		animate(self.Knob, {Position = self.Value and UDim2.new(1, -24, 0.5, -11) or UDim2.fromOffset(2, 2)}, motion.Base)
 		if self.SwitchStroke then
-			Tween(self.SwitchStroke, {Color = self.Value and Google.Theme.PrimaryHover or Google.Theme.BorderStrong, Transparency = self.Value and 0.08 or 0.22}, Motion.Base)
+			animate(self.SwitchStroke, {Color = self.Value and Google.Theme.PrimaryHover or Google.Theme.BorderStrong, Transparency = self.Value and 0.08 or 0.22}, motion.Base)
 		end
 		if self.SwitchGradient then
 			self.SwitchGradient.Color = ColorSequence.new({
-				ColorSequenceKeypoint.new(0, self.Value and Blend(Google.Theme.Primary, Color3.new(1, 1, 1), 0.14) or Blend(Google.Theme.BorderStrong, Color3.new(1, 1, 1), 0.1)),
+				ColorSequenceKeypoint.new(0, self.Value and blend(Google.Theme.Primary, Color3.new(1, 1, 1), 0.14) or blend(Google.Theme.BorderStrong, Color3.new(1, 1, 1), 0.1)),
 				ColorSequenceKeypoint.new(1, base)
 			})
 		end
@@ -1508,10 +1593,10 @@ function Section:CreateToggle(config)
 	function self:Get()
 		return self.Value
 	end
-	Connect(self.Connections, switch.MouseButton1Click, function()
+	bind(self.Connections, switch.MouseButton1Click, function()
 		self:Set(not self.Value)
 	end)
-	Connect(self.Connections, self.Instance.InputBegan, function(input)
+	bind(self.Connections, self.Instance.InputBegan, function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			self:Set(not self.Value)
 		end
@@ -1526,7 +1611,7 @@ function Section:CreateToggle(config)
 			self.SwitchStroke.Color = self.Value and Google.Theme.PrimaryHover or Google.Theme.BorderStrong
 		end
 		if self.KnobStroke then
-			self.KnobStroke.Color = Blend(Google.Theme.Border, Color3.new(1, 1, 1), 0.45)
+			self.KnobStroke.Color = blend(Google.Theme.Border, Color3.new(1, 1, 1), 0.45)
 		end
 	end
 	self:RefreshSection()
@@ -1581,8 +1666,8 @@ function Section:CreateSlider(config)
 		ClipsDescendants = false,
 		Parent = self.Instance
 	})
-	Corner(self.Track, 8)
-	self.TrackStroke = Stroke(self.Track, Google.Theme.BorderStrong, 0.65, 1)
+	round(self.Track, 8)
+	self.TrackStroke = outline(self.Track, Google.Theme.BorderStrong, 0.65, 1)
 	self.TrackStroke.Name = "SliderTrackStroke"
 	self.Fill = create("Frame", {
 		Size = UDim2.fromScale(0, 1),
@@ -1591,13 +1676,13 @@ function Section:CreateSlider(config)
 		ZIndex = 2,
 		Parent = self.Track
 	})
-	Corner(self.Fill, 8)
+	round(self.Fill, 8)
 	self.FillGradient = create("UIGradient", {
-		Name = "EnhancedGradient",
+		Name = "Gradient",
 		Rotation = 0,
 		Color = ColorSequence.new({
 			ColorSequenceKeypoint.new(0, Google.Theme.Primary),
-			ColorSequenceKeypoint.new(1, Blend(Google.Theme.Primary, Color3.new(1, 1, 1), 0.16))
+			ColorSequenceKeypoint.new(1, blend(Google.Theme.Primary, Color3.new(1, 1, 1), 0.16))
 		}),
 		Parent = self.Fill
 	})
@@ -1610,8 +1695,8 @@ function Section:CreateSlider(config)
 		ZIndex = 3,
 		Parent = self.Track
 	})
-	Corner(self.Knob, 10)
-	self.KnobStroke = Stroke(self.Knob, Google.Theme.Primary, 0.05, 2)
+	round(self.Knob, 10)
+	self.KnobStroke = outline(self.Knob, Google.Theme.Primary, 0.05, 2)
 	self.KnobDot = create("Frame", {
 		Size = UDim2.fromOffset(8, 8),
 		AnchorPoint = Vector2.new(0.5, 0.5),
@@ -1621,7 +1706,7 @@ function Section:CreateSlider(config)
 		ZIndex = 4,
 		Parent = self.Knob
 	})
-	Corner(self.KnobDot, 4)
+	round(self.KnobDot, 4)
 	local function round(value)
 		local precision = self.Precision
 		if precision <= 0 then
@@ -1636,9 +1721,9 @@ function Section:CreateSlider(config)
 			alpha = math.clamp((self.Value - self.Min) / (self.Max - self.Min), 0, 1)
 		end
 		self.ValueLabel.Text = tostring(self.Value)
-		local duration = self.Dragging and 0.05 or Motion.Base
-		Tween(self.Fill, {Size = UDim2.fromScale(alpha, 1)}, duration)
-		Tween(self.Knob, {Position = UDim2.fromScale(alpha, 0.5)}, duration)
+		local duration = self.Dragging and 0.05 or motion.Base
+		animate(self.Fill, {Size = UDim2.fromScale(alpha, 1)}, duration)
+		animate(self.Knob, {Position = UDim2.fromScale(alpha, 0.5)}, duration)
 	end
 	function self:Set(value)
 		self.Value = round(math.clamp(value, self.Min, self.Max))
@@ -1652,18 +1737,18 @@ function Section:CreateSlider(config)
 		local alpha = math.clamp((input.Position.X - self.Track.AbsolutePosition.X) / self.Track.AbsoluteSize.X, 0, 1)
 		self:Set(self.Min + (self.Max - self.Min) * alpha)
 	end
-	Connect(self.Connections, self.Track.InputBegan, function(input)
+	bind(self.Connections, self.Track.InputBegan, function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 			self.Dragging = true
 			setFromInput(input)
 		end
 	end)
-	Connect(self.Connections, UserInputService.InputChanged, function(input)
+	bind(self.Connections, UserInputService.InputChanged, function(input)
 		if self.Dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
 			setFromInput(input)
 		end
 	end)
-	Connect(self.Connections, UserInputService.InputEnded, function(input)
+	bind(self.Connections, UserInputService.InputEnded, function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 			self.Dragging = false
 		end
@@ -1676,7 +1761,7 @@ function Section:CreateSlider(config)
 		if self.FillGradient then
 			self.FillGradient.Color = ColorSequence.new({
 				ColorSequenceKeypoint.new(0, Google.Theme.Primary),
-				ColorSequenceKeypoint.new(1, Blend(Google.Theme.Primary, Color3.new(1, 1, 1), 0.16))
+				ColorSequenceKeypoint.new(1, blend(Google.Theme.Primary, Color3.new(1, 1, 1), 0.16))
 			})
 		end
 		self.Knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -1722,8 +1807,8 @@ function Section:CreateDropdown(config)
 		AutoButtonColor = false,
 		Parent = self.Instance
 	})
-	Corner(self.Main, 8)
-	self.MainStroke = Stroke(self.Main, Google.Theme.Border, 0.08, 1)
+	round(self.Main, 8)
+	self.MainStroke = outline(self.Main, Google.Theme.Border, 0.08, 1)
 	self.Label = create("TextLabel", {
 		Text = config.Name or "Dropdown",
 		Font = Enum.Font.GothamMedium,
@@ -1761,8 +1846,8 @@ function Section:CreateDropdown(config)
 		Visible = false,
 		Parent = self.Instance
 	})
-	Corner(self.Menu, 8)
-	self.MenuStroke = Stroke(self.Menu, Google.Theme.Border, 0.08, 1)
+	round(self.Menu, 8)
+	self.MenuStroke = outline(self.Menu, Google.Theme.Border, 0.08, 1)
 	local searchOffset = 0
 	if self.Searchable then
 		self.SearchBox = create("TextBox", {
@@ -1779,9 +1864,9 @@ function Section:CreateDropdown(config)
 			BorderSizePixel = 0,
 			Parent = self.Menu
 		})
-		Corner(self.SearchBox, 8)
-		self.SearchStroke = Stroke(self.SearchBox, Google.Theme.Border, 0.08, 1)
-		Padding(self.SearchBox, 8, 8, 0, 0)
+		round(self.SearchBox, 8)
+		self.SearchStroke = outline(self.SearchBox, Google.Theme.Border, 0.08, 1)
+		pad(self.SearchBox, 8, 8, 0, 0)
 		searchOffset = 36
 	end
 	self.OptionsFrame = create("ScrollingFrame", {
@@ -1795,7 +1880,7 @@ function Section:CreateDropdown(config)
 	})
 	self.OptionLayout = create("UIListLayout", {
 		SortOrder = Enum.SortOrder.LayoutOrder,
-		Padding = UDim.new(0, 2),
+		pad = UDim.new(0, 2),
 		Parent = self.OptionsFrame
 	})
 	function self:DisplayValue()
@@ -1823,7 +1908,7 @@ function Section:CreateDropdown(config)
 				LayoutOrder = i,
 				Parent = self.OptionsFrame
 			})
-			Corner(item, 7)
+			round(item, 7)
 			local label = create("TextLabel", {
 				Text = tostring(option),
 				Font = Enum.Font.Gotham,
@@ -1835,13 +1920,13 @@ function Section:CreateDropdown(config)
 				Position = UDim2.fromOffset(8, 0),
 				Parent = item
 			})
-			Connect(self.Connections, item.MouseEnter, function()
-				Tween(item, {BackgroundTransparency = 0}, Motion.Fast)
+			bind(self.Connections, item.MouseEnter, function()
+				animate(item, {BackgroundTransparency = 0}, motion.Fast)
 			end)
-			Connect(self.Connections, item.MouseLeave, function()
-				Tween(item, {BackgroundTransparency = 1}, Motion.Fast)
+			bind(self.Connections, item.MouseLeave, function()
+				animate(item, {BackgroundTransparency = 1}, motion.Fast)
 			end)
-			Connect(self.Connections, item.MouseButton1Click, function()
+			bind(self.Connections, item.MouseButton1Click, function()
 				self:Select(option)
 			end)
 		end
@@ -1860,15 +1945,15 @@ function Section:CreateDropdown(config)
 		self.Menu.Visible = true
 		local optionHeight = math.min(#self.Options * 30 + (self.Searchable and 40 or 6), 156)
 		self.Instance.Size = UDim2.new(1, 0, 0, 44 + optionHeight)
-		Tween(self.Menu, {Size = UDim2.new(1, 0, 0, optionHeight)}, Motion.Base)
-		Tween(self.Arrow, {Rotation = 180}, Motion.Base)
+		animate(self.Menu, {Size = UDim2.new(1, 0, 0, optionHeight)}, motion.Base)
+		animate(self.Arrow, {Rotation = 180}, motion.Base)
 		self:RefreshSection()
 	end
 	function self:CloseMenu()
 		self.Open = false
 		self.Instance.Size = UDim2.new(1, 0, 0, 40)
-		Tween(self.Arrow, {Rotation = 0}, Motion.Base)
-		Tween(self.Menu, {Size = UDim2.new(1, 0, 0, 0)}, Motion.Fast, nil, nil, function()
+		animate(self.Arrow, {Rotation = 0}, motion.Base)
+		animate(self.Menu, {Size = UDim2.new(1, 0, 0, 0)}, motion.Fast, nil, nil, function()
 			self.Menu.Visible = false
 		end)
 		self:RefreshSection()
@@ -1910,15 +1995,15 @@ function Section:CreateDropdown(config)
 		end
 		self:RefreshOptions()
 	end
-	Connect(self.Connections, self.Main.MouseEnter, function()
+	bind(self.Connections, self.Main.MouseEnter, function()
 		self.MainStroke.Color = Google.Theme.Primary
 	end)
-	Connect(self.Connections, self.Main.MouseLeave, function()
+	bind(self.Connections, self.Main.MouseLeave, function()
 		if not self.Open then
 			self.MainStroke.Color = Google.Theme.Border
 		end
 	end)
-	Connect(self.Connections, self.Main.MouseButton1Click, function()
+	bind(self.Connections, self.Main.MouseButton1Click, function()
 		if self.Open then
 			self:CloseMenu()
 		else
@@ -1926,7 +2011,7 @@ function Section:CreateDropdown(config)
 		end
 	end)
 	if self.SearchBox then
-		Connect(self.Connections, self.SearchBox:GetPropertyChangedSignal("Text"), function()
+		bind(self.Connections, self.SearchBox:GetPropertyChangedSignal("Text"), function()
 			self:Filter(self.SearchBox.Text)
 		end)
 	end
@@ -2002,9 +2087,9 @@ function Section:CreateTextbox(config)
 		ClearTextOnFocus = false,
 		Parent = self.Instance
 	})
-	Corner(self.Entry, 8)
-	Padding(self.Entry, 10, 10, 0, 0)
-	self.EntryStroke = Stroke(self.Entry, Google.Theme.Border, 0.08, 1)
+	round(self.Entry, 8)
+	pad(self.Entry, 10, 10, 0, 0)
+	self.EntryStroke = outline(self.Entry, Google.Theme.Border, 0.08, 1)
 	function self:Set(value)
 		if self.Numeric then
 			local numberValue = tonumber(value)
@@ -2020,12 +2105,12 @@ function Section:CreateTextbox(config)
 	function self:Get()
 		return self.Value
 	end
-	Connect(self.Connections, self.Entry.Focused, function()
-		Tween(self.EntryStroke, {Color = Google.Theme.Primary, Transparency = 0}, Motion.Fast)
+	bind(self.Connections, self.Entry.Focused, function()
+		animate(self.EntryStroke, {Color = Google.Theme.Primary, Transparency = 0}, motion.Fast)
 	end)
-	Connect(self.Connections, self.Entry.FocusLost, function()
+	bind(self.Connections, self.Entry.FocusLost, function()
 		self:Set(self.Entry.Text)
-		Tween(self.EntryStroke, {Color = Google.Theme.Border, Transparency = 0.08}, Motion.Fast)
+		animate(self.EntryStroke, {Color = Google.Theme.Border, Transparency = 0.08}, motion.Fast)
 	end)
 	function self:ApplyTheme()
 		self.Label.TextColor3 = Google.Theme.Text
@@ -2077,8 +2162,8 @@ function Section:CreateKeybind(config)
 		AutoButtonColor = false,
 		Parent = self.Instance
 	})
-	Corner(self.Button, 8)
-	self.ButtonStroke = Stroke(self.Button, Google.Theme.Border, 0.08, 1)
+	round(self.Button, 8)
+	self.ButtonStroke = outline(self.Button, Google.Theme.Border, 0.08, 1)
 	function self:Set(keycode)
 		self.Value = keycode
 		self.Button.Text = keycode.Name
@@ -2086,20 +2171,20 @@ function Section:CreateKeybind(config)
 	function self:Get()
 		return self.Value
 	end
-	Connect(self.Connections, self.Button.MouseEnter, function()
-		Tween(self.ButtonStroke, {Color = Google.Theme.Primary, Transparency = 0}, Motion.Fast)
+	bind(self.Connections, self.Button.MouseEnter, function()
+		animate(self.ButtonStroke, {Color = Google.Theme.Primary, Transparency = 0}, motion.Fast)
 	end)
-	Connect(self.Connections, self.Button.MouseLeave, function()
+	bind(self.Connections, self.Button.MouseLeave, function()
 		if not self.Binding then
-			Tween(self.ButtonStroke, {Color = Google.Theme.Border, Transparency = 0.08}, Motion.Fast)
+			animate(self.ButtonStroke, {Color = Google.Theme.Border, Transparency = 0.08}, motion.Fast)
 		end
 	end)
-	Connect(self.Connections, self.Button.MouseButton1Click, function()
+	bind(self.Connections, self.Button.MouseButton1Click, function()
 		self.Binding = true
 		self.Button.Text = "..."
-		Tween(self.ButtonStroke, {Color = Google.Theme.Primary, Transparency = 0}, Motion.Fast)
+		animate(self.ButtonStroke, {Color = Google.Theme.Primary, Transparency = 0}, motion.Fast)
 	end)
-	Connect(self.Connections, UserInputService.InputBegan, function(input, processed)
+	bind(self.Connections, UserInputService.InputBegan, function(input, processed)
 		if processed then
 			return
 		end
@@ -2107,7 +2192,7 @@ function Section:CreateKeybind(config)
 			if input.UserInputType == Enum.UserInputType.Keyboard then
 				self:Set(input.KeyCode)
 				self.Binding = false
-				Tween(self.ButtonStroke, {Color = Google.Theme.Border, Transparency = 0.08}, Motion.Fast)
+				animate(self.ButtonStroke, {Color = Google.Theme.Border, Transparency = 0.08}, motion.Fast)
 			end
 			return
 		end
@@ -2121,7 +2206,7 @@ function Section:CreateKeybind(config)
 			end
 		end
 	end)
-	Connect(self.Connections, UserInputService.InputEnded, function(input)
+	bind(self.Connections, UserInputService.InputEnded, function(input)
 		if input.KeyCode == self.Value and self.Mode == "Hold" then
 			self.Holding = false
 			self.Callback(false)
@@ -2181,8 +2266,8 @@ function Section:CreateColorPicker(config)
 		AutoButtonColor = false,
 		Parent = self.Instance
 	})
-	Corner(self.Button, 8)
-	self.ButtonStroke = Stroke(self.Button, Google.Theme.Border, 0.08, 1)
+	round(self.Button, 8)
+	self.ButtonStroke = outline(self.Button, Google.Theme.Border, 0.08, 1)
 	self.Palette = create("Frame", {
 		Size = UDim2.new(1, 0, 0, 0),
 		Position = UDim2.fromOffset(0, 42),
@@ -2198,7 +2283,7 @@ function Section:CreateColorPicker(config)
 		Parent = self.Palette
 	})
 	function self:Set(color)
-		if IsColor(color) then
+		if isColor(color) then
 			self.Value = color
 			self.Button.BackgroundColor3 = color
 			self.Callback(color)
@@ -2217,9 +2302,9 @@ function Section:CreateColorPicker(config)
 			AutoButtonColor = false,
 			Parent = self.Palette
 		})
-		Corner(swatch, 8)
-		Stroke(swatch, Google.Theme.Border, 0.12, 1)
-		Connect(self.Connections, swatch.MouseButton1Click, function()
+		round(swatch, 8)
+		outline(swatch, Google.Theme.Border, 0.12, 1)
+		bind(self.Connections, swatch.MouseButton1Click, function()
 			self:Set(color)
 		end)
 	end
@@ -2229,16 +2314,16 @@ function Section:CreateColorPicker(config)
 			self.Palette.Visible = true
 			self.Palette.Size = UDim2.new(1, 0, 0, 0)
 			self.Instance.Size = UDim2.new(1, 0, 0, 78)
-			Tween(self.Palette, {Size = UDim2.new(1, 0, 0, 32)}, Motion.Base)
+			animate(self.Palette, {Size = UDim2.new(1, 0, 0, 32)}, motion.Base)
 		else
-			Tween(self.Palette, {Size = UDim2.new(1, 0, 0, 0)}, Motion.Fast, nil, nil, function()
+			animate(self.Palette, {Size = UDim2.new(1, 0, 0, 0)}, motion.Fast, nil, nil, function()
 				self.Palette.Visible = false
 			end)
 			self.Instance.Size = UDim2.new(1, 0, 0, 38)
 		end
 		self:RefreshSection()
 	end
-	Connect(self.Connections, self.Button.MouseButton1Click, togglePalette)
+	bind(self.Connections, self.Button.MouseButton1Click, togglePalette)
 	function self:ApplyTheme()
 		self.Label.TextColor3 = Google.Theme.Text
 		self.ButtonStroke.Color = Google.Theme.Border
@@ -2295,8 +2380,8 @@ function Section:CreateParagraph(config)
 	local self = Control(self, height, "Paragraph")
 	self.Instance.BackgroundTransparency = 0
 	self.Instance.BackgroundColor3 = Google.Theme.CardAlt
-	Corner(self.Instance, 8)
-	self.Stroke = Stroke(self.Instance, Google.Theme.Border, 0.1, 1)
+	round(self.Instance, 8)
+	self.outline = outline(self.Instance, Google.Theme.Border, 0.1, 1)
 	if title then
 		self.TitleLabel = create("TextLabel", {
 			Text = title,
@@ -2325,7 +2410,7 @@ function Section:CreateParagraph(config)
 	})
 	function self:ApplyTheme()
 		self.Instance.BackgroundColor3 = Google.Theme.CardAlt
-		self.Stroke.Color = Google.Theme.Border
+		self.outline.Color = Google.Theme.Border
 		if self.TitleLabel then
 			self.TitleLabel.TextColor3 = Google.Theme.Text
 		end
@@ -2359,8 +2444,8 @@ function Section:CreateImage(config)
 	self.Instance.BackgroundTransparency = 0
 	self.Instance.BackgroundColor3 = Google.Theme.CardAlt
 	self.Instance.ClipsDescendants = true
-	Corner(self.Instance, 10)
-	self.Stroke = Stroke(self.Instance, Google.Theme.Border, 0.1, 1)
+	round(self.Instance, 10)
+	self.outline = outline(self.Instance, Google.Theme.Border, 0.1, 1)
 	if title then
 		self.TitleLabel = create("TextLabel", {
 			Text = title,
@@ -2395,17 +2480,17 @@ function Section:CreateImage(config)
 		ClipsDescendants = true,
 		Parent = self.Instance
 	})
-	Corner(self.ImageFrame, tonumber(config.ImageCornerRadius) or tonumber(config.CornerRadius) or 8)
-	self.ImageStroke = Stroke(self.ImageFrame, Google.Theme.Border, 0.08, 1)
+	round(self.ImageFrame, tonumber(config.ImageCornerRadius) or tonumber(config.CornerRadius) or 8)
+	self.ImageStroke = outline(self.ImageFrame, Google.Theme.Border, 0.08, 1)
 	local initialSource = config.Image or config.ImageId or config.Source or config.AssetId or config.Id
-	self.ImageFallback = ResolveImageThumbnail(initialSource)
+	self.ImageFallback = imageThumbnail(initialSource)
 	self.Image = create("ImageLabel", {
 		Name = "Image",
 		Size = UDim2.fromScale(1, 1),
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
-		ScaleType = ResolveImageScaleType(config.ScaleType),
-		Image = ResolveImageSource(config.Image or config.ImageId or config.Source or config.AssetId or config.Id),
+		ScaleType = imageScaleType(config.ScaleType),
+		Image = imageSource(config.Image or config.ImageId or config.Source or config.AssetId or config.Id),
 		Parent = self.ImageFrame
 	})
 	self.Placeholder = create("TextLabel", {
@@ -2422,8 +2507,8 @@ function Section:CreateImage(config)
 	local function applyImageSource(source)
 		loadToken = loadToken + 1
 		local token = loadToken
-		local resolved = ResolveImageSource(source)
-		local fallback = ResolveImageThumbnail(source)
+		local resolved = imageSource(source)
+		local fallback = imageThumbnail(source)
 		self.Image.Image = resolved
 		self.ImageFallback = fallback
 		self.Placeholder.Visible = resolved == ""
@@ -2444,12 +2529,12 @@ function Section:CreateImage(config)
 		return self.Image.Image
 	end
 	function self:SetScaleType(scaleType)
-		self.Image.ScaleType = ResolveImageScaleType(scaleType)
+		self.Image.ScaleType = imageScaleType(scaleType)
 		return self.Image.ScaleType
 	end
 	function self:ApplyTheme()
 		self.Instance.BackgroundColor3 = Google.Theme.CardAlt
-		self.Stroke.Color = Google.Theme.Border
+		self.outline.Color = Google.Theme.Border
 		self.ImageFrame.BackgroundColor3 = config.BackgroundColor or Google.Theme.Input
 		self.ImageStroke.Color = Google.Theme.Border
 		if self.TitleLabel then
@@ -2582,11 +2667,11 @@ end
 function Window:UpdateResponsiveLayout(force)
 	local targetMobile = self.IsMobile
 	if self.AutoMobile then
-		targetMobile = DetectMobileDevice()
+		targetMobile = isMobileDevice()
 	end
 	local changed = targetMobile ~= self.IsMobile
 	self.IsMobile = targetMobile
-	self.Size = self.IsMobile and ResolveMobileWindowSize({MobileSize = self.MobileSize}) or self.DesktopSize
+	self.Size = self.IsMobile and mobileWindowSize({MobileSize = self.MobileSize}) or self.DesktopSize
 	local topHeight = self.IsMobile and 58 or 54
 	local navSize = self.IsMobile and 64 or 152
 	self.Topbar.Size = UDim2.new(1, 0, 0, topHeight)
@@ -2606,7 +2691,7 @@ function Window:UpdateResponsiveLayout(force)
 		self.TabLayout.FillDirection = Enum.FillDirection.Horizontal
 		self.TabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 		self.TabLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-		self.TabLayout.Padding = UDim.new(0, 6)
+		self.TabLayout.pad = UDim.new(0, 6)
 		self.PageWrap.Size = UDim2.new(1, 0, 1, -(topHeight + navSize))
 		self.PageWrap.Position = UDim2.fromOffset(0, topHeight)
 	else
@@ -2620,7 +2705,7 @@ function Window:UpdateResponsiveLayout(force)
 		self.TabLayout.FillDirection = Enum.FillDirection.Vertical
 		self.TabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 		self.TabLayout.VerticalAlignment = Enum.VerticalAlignment.Top
-		self.TabLayout.Padding = UDim.new(0, 4)
+		self.TabLayout.pad = UDim.new(0, 4)
 		self.PageWrap.Size = UDim2.new(1, -navSize, 1, -topHeight)
 		self.PageWrap.Position = UDim2.fromOffset(navSize, topHeight)
 	end
@@ -2631,7 +2716,7 @@ function Window:UpdateResponsiveLayout(force)
 	self:UpdateTabListCanvas()
 	if not self.Minimized then
 		if force or changed then
-			Tween(self.Instance, {Size = self.Size}, self.IsMobile and Motion.Mobile or Motion.Slow, Enum.EasingStyle.Quint)
+			animate(self.Instance, {Size = self.Size}, self.IsMobile and motion.Mobile or motion.Slow, Enum.EasingStyle.Quint)
 		else
 			self.Instance.Size = self.Size
 		end
@@ -2673,7 +2758,7 @@ function Window:Minimize()
 	self.Sidebar.Visible = false
 	self.PageWrap.Visible = false
 	local height = self.IsMobile and 58 or 54
-	Tween(self.Instance, {Size = UDim2.fromOffset(self.Instance.AbsoluteSize.X, height)}, Motion.Slow, Enum.EasingStyle.Quint)
+	animate(self.Instance, {Size = UDim2.fromOffset(self.Instance.AbsoluteSize.X, height)}, motion.Slow, Enum.EasingStyle.Quint)
 end
 
 function Window:Restore()
@@ -2682,7 +2767,7 @@ function Window:Restore()
 	end
 	self.Minimized = false
 	self:UpdateResponsiveLayout(true)
-	Tween(self.Instance, {Size = self.Size}, Motion.Slow, Enum.EasingStyle.Quint, nil, function()
+	animate(self.Instance, {Size = self.Size}, motion.Slow, Enum.EasingStyle.Quint, nil, function()
 		self.Sidebar.Visible = true
 		self.PageWrap.Visible = true
 	end)
@@ -2707,7 +2792,7 @@ function Window:Toggle()
 end
 
 function Window:Destroy()
-	DisconnectAll(self.Connections)
+	disconnectAll(self.Connections)
 	for _, tab in ipairs(self.Tabs) do
 		if tab.Destroy then
 			tab:Destroy()
@@ -2725,7 +2810,7 @@ function Window:Destroy()
 end
 
 function Tab:Destroy()
-	DisconnectAll(self.Connections)
+	disconnectAll(self.Connections)
 	for _, section in ipairs(self.Sections) do
 		if section.Destroy then
 			section:Destroy()
@@ -2736,7 +2821,7 @@ function Tab:Destroy()
 end
 
 function Section:Destroy()
-	DisconnectAll(self.Connections)
+	disconnectAll(self.Connections)
 	for _, control in ipairs(self.Controls) do
 		if control.Destroy then
 			control:Destroy()
@@ -2746,7 +2831,7 @@ function Section:Destroy()
 end
 
 function ControlBase:Destroy()
-	DisconnectAll(self.Connections)
+	disconnectAll(self.Connections)
 	if self.Instance then
 		self.Instance:Destroy()
 	end
@@ -2767,7 +2852,7 @@ function NotificationManager:Init()
 		IgnoreGuiInset = true,
 		ResetOnSpawn = false,
 		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-		Parent = SafeParent()
+		Parent = getGuiHost()
 	})
 	self.Holder = create("Frame", {
 		Name = "Holder",
@@ -2782,7 +2867,7 @@ function NotificationManager:Update()
 	for i = #self.Items, 1, -1 do
 		local frame = self.Items[i]
 		if frame and frame.Parent then
-			Tween(frame, {Position = UDim2.new(1, -18, 1, -offset)}, Motion.Base)
+			animate(frame, {Position = UDim2.new(1, -18, 1, -offset)}, motion.Base)
 			offset = offset + frame.Size.Y.Offset + 8
 		end
 	end
@@ -2801,8 +2886,8 @@ function NotificationManager:Push(config)
 		ClipsDescendants = true,
 		Parent = self.Holder
 	})
-	Corner(frame, 10)
-	Stroke(frame, Google.Theme.Border, 0.05, 1)
+	round(frame, 10)
+	outline(frame, Google.Theme.Border, 0.05, 1)
 	local iconWrap = create("Frame", {
 		Size = UDim2.fromOffset(34, 34),
 		Position = UDim2.fromOffset(12, 14),
@@ -2810,7 +2895,7 @@ function NotificationManager:Push(config)
 		BorderSizePixel = 0,
 		Parent = frame
 	})
-	Corner(iconWrap, 8)
+	round(iconWrap, 8)
 	Google.CreateIcon(config.Icon or "info", 18, config.IconColor or Google.Theme.Primary, iconWrap, {
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.5)
@@ -2845,14 +2930,14 @@ function NotificationManager:Push(config)
 		BorderSizePixel = 0,
 		Parent = frame
 	})
-	Corner(progress, 2)
+	round(progress, 2)
 	table.insert(self.Items, frame)
 	self:Update()
-	Tween(frame, {Position = UDim2.new(1, -18, 1, -18)}, Motion.Slow, Enum.EasingStyle.Quint)
-	Tween(progress, {Size = UDim2.new(0, 0, 0, 2)}, duration, Enum.EasingStyle.Linear)
+	animate(frame, {Position = UDim2.new(1, -18, 1, -18)}, motion.Slow, Enum.EasingStyle.Quint)
+	animate(progress, {Size = UDim2.new(0, 0, 0, 2)}, duration, Enum.EasingStyle.Linear)
 	coroutine.wrap(function()
 		wait(duration)
-		Tween(frame, {Position = UDim2.new(1, 310, frame.Position.Y.Scale, frame.Position.Y.Offset), BackgroundTransparency = 1}, Motion.Slow, Enum.EasingStyle.Quint, nil, function()
+		animate(frame, {Position = UDim2.new(1, 310, frame.Position.Y.Scale, frame.Position.Y.Offset), BackgroundTransparency = 1}, motion.Slow, Enum.EasingStyle.Quint, nil, function()
 			for i, item in ipairs(self.Items) do
 				if item == frame then
 					table.remove(self.Items, i)
@@ -2881,7 +2966,7 @@ function Google:Confirm(config)
 		IgnoreGuiInset = true,
 		ResetOnSpawn = false,
 		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-		Parent = SafeParent()
+		Parent = getGuiHost()
 	})
 	local overlay = create("Frame", {
 		Size = UDim2.fromScale(1, 1),
@@ -2897,8 +2982,8 @@ function Google:Confirm(config)
 		BorderSizePixel = 0,
 		Parent = overlay
 	})
-	Corner(dialog, 12)
-	Stroke(dialog, Google.Theme.Border, 0.05, 1)
+	round(dialog, 12)
+	outline(dialog, Google.Theme.Border, 0.05, 1)
 	create("TextLabel", {
 		Text = config.Title or "Confirm",
 		Font = Enum.Font.GothamBold,
@@ -2934,7 +3019,7 @@ function Google:Confirm(config)
 		AutoButtonColor = false,
 		Parent = dialog
 	})
-	Corner(cancel, 8)
+	round(cancel, 8)
 	local confirm = create("TextButton", {
 		Text = config.ConfirmText or "Confirm",
 		Font = Enum.Font.GothamBold,
@@ -2947,7 +3032,7 @@ function Google:Confirm(config)
 		AutoButtonColor = false,
 		Parent = dialog
 	})
-	Corner(confirm, 8)
+	round(confirm, 8)
 	cancel.MouseButton1Click:Connect(function()
 		gui:Destroy()
 		callback(false)
@@ -2966,7 +3051,7 @@ function Google:Prompt(config)
 		IgnoreGuiInset = true,
 		ResetOnSpawn = false,
 		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-		Parent = SafeParent()
+		Parent = getGuiHost()
 	})
 	local overlay = create("Frame", {
 		Size = UDim2.fromScale(1, 1),
@@ -2982,8 +3067,8 @@ function Google:Prompt(config)
 		BorderSizePixel = 0,
 		Parent = overlay
 	})
-	Corner(dialog, 12)
-	Stroke(dialog, Google.Theme.Border, 0.05, 1)
+	round(dialog, 12)
+	outline(dialog, Google.Theme.Border, 0.05, 1)
 	create("TextLabel", {
 		Text = config.Title or "Input",
 		Font = Enum.Font.GothamBold,
@@ -3022,9 +3107,9 @@ function Google:Prompt(config)
 		BorderSizePixel = 0,
 		Parent = dialog
 	})
-	Corner(input, 8)
-	Stroke(input, Google.Theme.Border, 0.08, 1)
-	Padding(input, 10, 10, 0, 0)
+	round(input, 8)
+	outline(input, Google.Theme.Border, 0.08, 1)
+	pad(input, 10, 10, 0, 0)
 	local cancel = create("TextButton", {
 		Text = config.CancelText or "Cancel",
 		Font = Enum.Font.GothamBold,
@@ -3037,7 +3122,7 @@ function Google:Prompt(config)
 		AutoButtonColor = false,
 		Parent = dialog
 	})
-	Corner(cancel, 8)
+	round(cancel, 8)
 	local confirm = create("TextButton", {
 		Text = config.ConfirmText or "Submit",
 		Font = Enum.Font.GothamBold,
@@ -3050,7 +3135,7 @@ function Google:Prompt(config)
 		AutoButtonColor = false,
 		Parent = dialog
 	})
-	Corner(confirm, 8)
+	round(confirm, 8)
 	cancel.MouseButton1Click:Connect(function()
 		gui:Destroy()
 		callback(nil)
@@ -3075,7 +3160,7 @@ function Google:Cleanup()
 	end
 end
 
-local EnhancedDefaults = {
+local controlDefaults = {
 	ColorPalette = {
 		Color3.fromRGB(26, 115, 232),
 		Color3.fromRGB(52, 168, 83),
@@ -3094,7 +3179,7 @@ local EnhancedDefaults = {
 	}
 }
 
-local function FindDirectChild(parent, name)
+local function getChild(parent, name)
 	if not parent then
 		return nil
 	end
@@ -3106,14 +3191,14 @@ local function FindDirectChild(parent, name)
 	return nil
 end
 
-local function EnsureStroke(instance, name, color, transparency, thickness)
+local function getStroke(instance, name, color, transparency, thickness)
 	if not instance then
 		return nil
 	end
-	local stroke = FindDirectChild(instance, name or "EnhancedStroke")
+	local stroke = getChild(instance, name or "outline")
 	if not stroke then
-		stroke = Stroke(instance, color or Google.Theme.Border, transparency or 0.1, thickness or 1)
-		stroke.Name = name or "EnhancedStroke"
+		stroke = outline(instance, color or Google.Theme.Border, transparency or 0.1, thickness or 1)
+		stroke.Name = name or "outline"
 	else
 		stroke.Color = color or stroke.Color
 		stroke.Transparency = transparency or stroke.Transparency
@@ -3122,14 +3207,14 @@ local function EnsureStroke(instance, name, color, transparency, thickness)
 	return stroke
 end
 
-local function EnsureGradient(instance, colorA, colorB, rotation)
+local function getGradient(instance, colorA, colorB, rotation)
 	if not instance then
 		return nil
 	end
-	local gradient = FindDirectChild(instance, "EnhancedGradient")
+	local gradient = getChild(instance, "Gradient")
 	if not gradient then
 		gradient = create("UIGradient", {
-			Name = "EnhancedGradient",
+			Name = "Gradient",
 			Rotation = rotation or 90,
 			Parent = instance
 		})
@@ -3141,14 +3226,14 @@ local function EnsureGradient(instance, colorA, colorB, rotation)
 	return gradient
 end
 
-local function EnsureScale(instance)
+local function getScale(instance)
 	if not instance then
 		return nil
 	end
-	local scale = FindDirectChild(instance, "EnhancedScale")
+	local scale = getChild(instance, "Scale")
 	if not scale then
 		scale = create("UIScale", {
-			Name = "EnhancedScale",
+			Name = "Scale",
 			Scale = 1,
 			Parent = instance
 		})
@@ -3156,20 +3241,20 @@ local function EnsureScale(instance)
 	return scale
 end
 
-local function SetLabelText(label, value)
+local function setText(label, value)
 	if label then
 		label.Text = tostring(value or "")
 	end
 end
 
-local function FormatColorHex(color)
+local function formatHex(color)
 	local r = math.floor(color.R * 255 + 0.5)
 	local g = math.floor(color.G * 255 + 0.5)
 	local b = math.floor(color.B * 255 + 0.5)
 	return string.format("#%02X%02X%02X", r, g, b)
 end
 
-local function ColorFromHex(value)
+local function colorFromHex(value)
 	if type(value) ~= "string" then
 		return nil
 	end
@@ -3186,7 +3271,7 @@ local function ColorFromHex(value)
 	return nil
 end
 
-local function UseCallbackGuard(control)
+local function guardCallback(control)
 	local callback = control.Callback or function() end
 	control.RawCallback = callback
 	control.Callback = function(...)
@@ -3207,7 +3292,7 @@ local function UseCallbackGuard(control)
 	end
 end
 
-local function SetControlOpacity(control, opacity)
+local function setControlOpacity(control, opacity)
 	local instance = control and control.Instance
 	if not instance then
 		return
@@ -3221,10 +3306,10 @@ local function SetControlOpacity(control, opacity)
 	end
 end
 
-local function AddDisableMethods(control, refresh)
+local function addDisabledState(control, refresh)
 	function control:SetDisabled(value)
 		self.Disabled = value and true or false
-		SetControlOpacity(self, self.Disabled and 0.42 or 0)
+		setControlOpacity(self, self.Disabled and 0.42 or 0)
 		if refresh then
 			refresh(self)
 		end
@@ -3239,19 +3324,19 @@ local function AddDisableMethods(control, refresh)
 	return control
 end
 
-local OriginalSectionCreateButton = Section.CreateButton
+local createButtonBase = Section.CreateButton
 function Section:CreateButton(config)
 	config = config or {}
-	local control = OriginalSectionCreateButton(self, config)
+	local control = createButtonBase(self, config)
 	control.Variant = config.Variant or config.Style or "Primary"
 	control.Disabled = config.Disabled or false
-	UseCallbackGuard(control)
+	guardCallback(control)
 	if control.Button then
 		control.Button.ClipsDescendants = true
-		Corner(control.Button, tonumber(config.CornerRadius) or 10)
-		control.ButtonStroke = EnsureStroke(control.Button, "ButtonStroke", Google.Theme.PrimaryHover, 0.25, 1)
-		control.ButtonScale = EnsureScale(control.Button)
-		control.ButtonGradient = EnsureGradient(control.Button, Google.Theme.Primary, Blend(Google.Theme.Primary, Color3.new(1, 1, 1), 0.12), 90)
+		round(control.Button, tonumber(config.CornerRadius) or 10)
+		control.ButtonStroke = getStroke(control.Button, "ButtonStroke", Google.Theme.PrimaryHover, 0.25, 1)
+		control.ButtonScale = getScale(control.Button)
+		control.ButtonGradient = getGradient(control.Button, Google.Theme.Primary, blend(Google.Theme.Primary, Color3.new(1, 1, 1), 0.12), 90)
 	end
 	local function applyVariant(self)
 		local variant = string.lower(tostring(self.Variant or "Primary"))
@@ -3290,7 +3375,7 @@ function Section:CreateButton(config)
 			end
 			if self.ButtonGradient then
 				self.ButtonGradient.Color = ColorSequence.new({
-					ColorSequenceKeypoint.new(0, Blend(background, Color3.new(1, 1, 1), variant == "secondary" and 0.02 or 0.08)),
+					ColorSequenceKeypoint.new(0, blend(background, Color3.new(1, 1, 1), variant == "secondary" and 0.02 or 0.08)),
 					ColorSequenceKeypoint.new(1, background)
 				})
 			end
@@ -3312,12 +3397,12 @@ function Section:CreateButton(config)
 		return self
 	end
 	function control:SetText(text)
-		SetLabelText(self.TextLabel, text)
+		setText(self.TextLabel, text)
 		return self
 	end
 	function control:SetDescription(text)
 		if self.DescriptionLabel then
-			SetLabelText(self.DescriptionLabel, text)
+			setText(self.DescriptionLabel, text)
 		end
 		return self
 	end
@@ -3326,68 +3411,112 @@ function Section:CreateButton(config)
 		if originalApply then originalApply(self) end
 		applyVariant(self)
 	end
-	AddDisableMethods(control, applyVariant)
+	addDisabledState(control, applyVariant)
 	applyVariant(control)
 	if control.Button and control.ButtonScale then
-		Connect(control.Connections, control.Button.MouseEnter, function()
+		bind(control.Connections, control.Button.MouseEnter, function()
 			if not control.Disabled then
-				Tween(control.ButtonScale, {Scale = 1.01}, Motion.Fast)
+				animate(control.ButtonScale, {Scale = 1.01}, motion.Fast)
 			end
 		end)
-		Connect(control.Connections, control.Button.MouseLeave, function()
-			Tween(control.ButtonScale, {Scale = 1}, Motion.Fast)
+		bind(control.Connections, control.Button.MouseLeave, function()
+			animate(control.ButtonScale, {Scale = 1}, motion.Fast)
 		end)
-		Connect(control.Connections, control.Button.MouseButton1Down, function()
+		bind(control.Connections, control.Button.MouseButton1Down, function()
 			if not control.Disabled then
-				Tween(control.ButtonScale, {Scale = 0.985}, Motion.Fast)
+				animate(control.ButtonScale, {Scale = 0.985}, motion.Fast)
 			end
 		end)
-		Connect(control.Connections, control.Button.MouseButton1Up, function()
-			Tween(control.ButtonScale, {Scale = 1.01}, Motion.Fast)
+		bind(control.Connections, control.Button.MouseButton1Up, function()
+			animate(control.ButtonScale, {Scale = 1.01}, motion.Fast)
 		end)
 	end
 	control:SetDisabled(control.Disabled)
 	return control
 end
 
-local OriginalSectionCreateToggle = Section.CreateToggle
-function Section:CreateToggle(config)
-	config = config or {}
-	local control = OriginalSectionCreateToggle(self, config)
-	control.Disabled = config.Disabled or false
-	UseCallbackGuard(control)
+local function roundPill(instance)
+	if not instance then
+		return nil
+	end
+	for _, child in ipairs(instance:GetChildren()) do
+		if child:IsA("UICorner") then
+			child.CornerRadius = UDim.new(1, 0)
+			return child
+		end
+	end
+	return roundFull(instance)
+end
+
+local function removeUiChildren(instance, className)
+	if not instance then
+		return
+	end
+	for _, child in ipairs(instance:GetChildren()) do
+		if child:IsA(className) then
+			child:Destroy()
+		end
+	end
+end
+
+local function paintToggle(control)
+	local enabled = control.Value and true or false
+	local trackColor = enabled and Google.Theme.Primary or Google.Theme.BorderStrong
 	if control.Switch then
-		control.SwitchStroke = EnsureStroke(control.Switch, "ToggleStroke", Google.Theme.BorderStrong, 0.22, 1)
-		control.SwitchGradient = EnsureGradient(control.Switch, control.Value and Google.Theme.Primary or Google.Theme.BorderStrong, control.Value and Blend(Google.Theme.Primary, Color3.new(1, 1, 1), 0.12) or Google.Theme.Border, 0)
+		control.Switch.Size = UDim2.fromOffset(48, 24)
+		control.Switch.Position = UDim2.new(1, -48, 0.5, -12)
+		control.Switch.BackgroundColor3 = trackColor
+		control.Switch.BackgroundTransparency = control.Disabled and 0.45 or 0
+		control.Switch.BorderSizePixel = 0
+		control.Switch.ClipsDescendants = true
+		roundPill(control.Switch)
+		removeUiChildren(control.Switch, "UIStroke")
+		removeUiChildren(control.Switch, "UIGradient")
 	end
 	if control.Knob then
-		control.KnobStroke = EnsureStroke(control.Knob, "KnobStroke", Blend(Google.Theme.Border, Color3.new(1, 1, 1), 0.45), 0.12, 1)
+		control.Knob.Size = UDim2.fromOffset(20, 20)
+		control.Knob.Position = enabled and UDim2.new(1, -22, 0.5, -10) or UDim2.fromOffset(2, 2)
+		control.Knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		control.Knob.BackgroundTransparency = 0
+		control.Knob.BorderSizePixel = 0
+		roundPill(control.Knob)
+		removeUiChildren(control.Knob, "UIStroke")
+		removeUiChildren(control.Knob, "UIGradient")
 	end
-	local originalSet = control.Set
+	control.SwitchStroke = nil
+	control.SwitchGradient = nil
+	control.KnobStroke = nil
+end
+
+local createToggle = Section.CreateToggle
+function Section:CreateToggle(config)
+	config = config or {}
+	local control = createToggle(self, config)
+	control.Disabled = config.Disabled or false
+	guardCallback(control)
+	paintToggle(control)
 	function control:Set(value)
 		if self.Disabled then
 			return self
 		end
-		originalSet(self, value)
-		if self.SwitchGradient then
-			local base = self.Value and Google.Theme.Primary or Google.Theme.BorderStrong
-			self.SwitchGradient.Color = ColorSequence.new({
-				ColorSequenceKeypoint.new(0, Blend(base, Color3.new(1, 1, 1), self.Value and 0.1 or 0.04)),
-				ColorSequenceKeypoint.new(1, base)
-			})
+		self.Value = value and true or false
+		local trackColor = self.Value and Google.Theme.Primary or Google.Theme.BorderStrong
+		if self.Switch then
+			animate(self.Switch, {BackgroundColor3 = trackColor, BackgroundTransparency = 0}, motion.Base)
 		end
-		if self.SwitchStroke then
-			self.SwitchStroke.Color = self.Value and Google.Theme.PrimaryHover or Google.Theme.BorderStrong
+		if self.Knob then
+			animate(self.Knob, {Position = self.Value and UDim2.new(1, -22, 0.5, -10) or UDim2.fromOffset(2, 2)}, motion.Base)
 		end
+		self.Callback(self.Value)
 		return self
 	end
 	function control:SetText(text)
-		SetLabelText(self.Label, text)
+		setText(self.Label, text)
 		return self
 	end
 	function control:SetDescription(text)
 		if self.DescriptionLabel then
-			SetLabelText(self.DescriptionLabel, text)
+			setText(self.DescriptionLabel, text)
 		end
 		return self
 	end
@@ -3400,40 +3529,77 @@ function Section:CreateToggle(config)
 	function control:Toggle()
 		return self:Set(not self.Value)
 	end
-	local originalApply = control.ApplyTheme
-	function control:ApplyTheme()
-		if originalApply then originalApply(self) end
-		if self.SwitchStroke then
-			self.SwitchStroke.Color = self.Value and Google.Theme.PrimaryHover or Google.Theme.BorderStrong
-		end
-		if self.KnobStroke then
-			self.KnobStroke.Color = Blend(Google.Theme.Border, Color3.new(1, 1, 1), 0.45)
-		end
-		if self.SwitchGradient then
-			local base = self.Value and Google.Theme.Primary or Google.Theme.BorderStrong
-			self.SwitchGradient.Color = ColorSequence.new({
-				ColorSequenceKeypoint.new(0, Blend(base, Color3.new(1, 1, 1), self.Value and 0.1 or 0.04)),
-				ColorSequenceKeypoint.new(1, base)
-			})
-		end
+	function control:SetDisabled(value)
+		self.Disabled = value and true or false
+		setControlOpacity(self, self.Disabled and 0.42 or 0)
+		paintToggle(self)
+		return self
 	end
-	AddDisableMethods(control, function(self)
-		if self.Switch then self.Switch.BackgroundTransparency = self.Disabled and 0.45 or 0 end
-	end)
+	function control:Enable()
+		return self:SetDisabled(false)
+	end
+	function control:Disable()
+		return self:SetDisabled(true)
+	end
+	local applyTheme = control.ApplyTheme
+	function control:ApplyTheme()
+		if applyTheme then
+			applyTheme(self)
+		end
+		paintToggle(self)
+	end
 	control:SetDisabled(control.Disabled)
 	return control
 end
 
-local OriginalSectionCreateSlider = Section.CreateSlider
+local function paintSlider(control, config)
+	local trackY = config and config.Description and 54 or 38
+	if control.Track then
+		control.Track.Size = UDim2.new(1, -22, 0, 8)
+		control.Track.Position = UDim2.fromOffset(11, trackY)
+		control.Track.BackgroundColor3 = Google.Theme.Border
+		control.Track.BackgroundTransparency = control.Disabled and 0.45 or 0
+		control.Track.BorderSizePixel = 0
+		control.Track.ClipsDescendants = false
+		roundPill(control.Track)
+		removeUiChildren(control.Track, "UIStroke")
+	end
+	if control.Fill then
+		control.Fill.BackgroundColor3 = Google.Theme.Primary
+		control.Fill.BackgroundTransparency = 0
+		control.Fill.BorderSizePixel = 0
+		roundPill(control.Fill)
+		removeUiChildren(control.Fill, "UIGradient")
+	end
+	if control.Knob then
+		control.Knob.Size = UDim2.fromOffset(18, 18)
+		control.Knob.BackgroundColor3 = Google.Theme.Primary
+		control.Knob.BackgroundTransparency = 0
+		control.Knob.BorderSizePixel = 0
+		roundPill(control.Knob)
+		removeUiChildren(control.Knob, "UIStroke")
+		removeUiChildren(control.Knob, "UIGradient")
+	end
+	if control.KnobDot then
+		control.KnobDot:Destroy()
+		control.KnobDot = nil
+	end
+	control.KnobStroke = nil
+	control.TrackStroke = nil
+	control.FillGradient = nil
+	control.KnobScale = nil
+end
+
+local createSlider = Section.CreateSlider
 function Section:CreateSlider(config)
 	config = config or {}
-	local control = OriginalSectionCreateSlider(self, config)
+	local control = createSlider(self, config)
 	control.Disabled = config.Disabled or false
 	control.Step = config.Step or config.Increment
 	control.Prefix = config.Prefix or ""
 	control.Suffix = config.Suffix or ""
 	control.ValueFormat = config.Format or config.ValueFormat
-	UseCallbackGuard(control)
+	guardCallback(control)
 	if config.Description then
 		control.Instance.Size = UDim2.new(1, 0, 0, 74)
 		control.DescriptionLabel = create("TextLabel", {
@@ -3447,21 +3613,8 @@ function Section:CreateSlider(config)
 			Position = UDim2.fromOffset(0, 25),
 			Parent = control.Instance
 		})
-		if control.Track then
-			control.Track.Position = UDim2.fromOffset(0, 54)
-		end
 	end
-	if control.Track then
-		control.Track.BackgroundTransparency = 0.05
-		control.TrackStroke = EnsureStroke(control.Track, "SliderTrackStroke", Google.Theme.BorderStrong, 0.68, 1)
-	end
-	if control.Fill then
-		control.FillGradient = EnsureGradient(control.Fill, Google.Theme.Primary, Blend(Google.Theme.Primary, Color3.new(1, 1, 1), 0.18), 0)
-	end
-	if control.Knob then
-		control.KnobScale = EnsureScale(control.Knob)
-	end
-	local function formatted(self)
+	local function formatValue(self)
 		if type(self.ValueFormat) == "function" then
 			local ok, result = pcall(self.ValueFormat, self.Value)
 			if ok then
@@ -3470,14 +3623,22 @@ function Section:CreateSlider(config)
 		end
 		return tostring(self.Prefix or "") .. tostring(self.Value) .. tostring(self.Suffix or "")
 	end
-	local originalUpdate = control.UpdateVisual
 	function control:UpdateVisual()
-		originalUpdate(self)
+		local alpha = 0
+		if self.Max ~= self.Min then
+			alpha = math.clamp((self.Value - self.Min) / (self.Max - self.Min), 0, 1)
+		end
 		if self.ValueLabel then
-			self.ValueLabel.Text = formatted(self)
+			self.ValueLabel.Text = formatValue(self)
+		end
+		local duration = self.Dragging and 0.03 or motion.Base
+		if self.Fill then
+			animate(self.Fill, {Size = UDim2.fromScale(alpha, 1)}, duration)
+		end
+		if self.Knob then
+			animate(self.Knob, {Position = UDim2.fromScale(alpha, 0.5)}, duration)
 		end
 	end
-	local originalSet = control.Set
 	function control:Set(value)
 		if self.Disabled then
 			return self
@@ -3486,8 +3647,17 @@ function Section:CreateSlider(config)
 			local step = tonumber(self.Step)
 			value = self.Min + math.floor(((value - self.Min) / step) + 0.5) * step
 		end
-		originalSet(self, value)
+		local precision = self.Precision or 0
+		value = math.clamp(value, self.Min, self.Max)
+		if precision <= 0 then
+			value = math.floor(value + 0.5)
+		else
+			local power = 10 ^ precision
+			value = math.floor(value * power + 0.5) / power
+		end
+		self.Value = value
 		self:UpdateVisual()
+		self.Callback(self.Value)
 		return self
 	end
 	function control:SetBounds(minimum, maximum)
@@ -3496,7 +3666,7 @@ function Section:CreateSlider(config)
 		return self:Set(self.Value)
 	end
 	function control:SetText(text)
-		SetLabelText(self.Label, text)
+		setText(self.Label, text)
 		return self
 	end
 	function control:SetSuffix(text)
@@ -3509,42 +3679,44 @@ function Section:CreateSlider(config)
 		self:UpdateVisual()
 		return self
 	end
-	local originalApply = control.ApplyTheme
+	function control:SetDisabled(value)
+		self.Disabled = value and true or false
+		setControlOpacity(self, self.Disabled and 0.42 or 0)
+		paintSlider(self, config)
+		self:UpdateVisual()
+		return self
+	end
+	function control:Enable()
+		return self:SetDisabled(false)
+	end
+	function control:Disable()
+		return self:SetDisabled(true)
+	end
+	local applyTheme = control.ApplyTheme
 	function control:ApplyTheme()
-		if originalApply then originalApply(self) end
-		if self.DescriptionLabel then self.DescriptionLabel.TextColor3 = Google.Theme.Muted end
-		if self.TrackStroke then self.TrackStroke.Color = Google.Theme.BorderStrong end
-		if self.FillGradient then
-			self.FillGradient.Color = ColorSequence.new({
-				ColorSequenceKeypoint.new(0, Google.Theme.Primary),
-				ColorSequenceKeypoint.new(1, Blend(Google.Theme.Primary, Color3.new(1, 1, 1), 0.18))
-			})
+		if applyTheme then
+			applyTheme(self)
 		end
+		if self.DescriptionLabel then
+			self.DescriptionLabel.TextColor3 = Google.Theme.Muted
+		end
+		paintSlider(self, config)
+		self:UpdateVisual()
 	end
-	AddDisableMethods(control, function(self)
-		if self.Track then self.Track.BackgroundTransparency = self.Disabled and 0.45 or 0.05 end
-	end)
-	if control.KnobScale then
-		Connect(control.Connections, control.Track.MouseEnter, function()
-			if not control.Disabled then Tween(control.KnobScale, {Scale = 1.12}, Motion.Fast) end
-		end)
-		Connect(control.Connections, control.Track.MouseLeave, function()
-			Tween(control.KnobScale, {Scale = 1}, Motion.Fast)
-		end)
-	end
+	paintSlider(control, config)
 	control:UpdateVisual()
 	control:SetDisabled(control.Disabled)
 	return control
 end
 
-local OriginalSectionCreateDropdown = Section.CreateDropdown
+local createDropdownBase = Section.CreateDropdown
 function Section:CreateDropdown(config)
 	config = config or {}
-	local control = OriginalSectionCreateDropdown(self, config)
+	local control = createDropdownBase(self, config)
 	control.Disabled = config.Disabled or false
 	control.Placeholder = config.Placeholder or "Select"
 	if control.Main then
-		Corner(control.Main, tonumber(config.CornerRadius) or 10)
+		round(control.Main, tonumber(config.CornerRadius) or 10)
 	end
 	local function optionSelected(self, option)
 		if self.Multi then
@@ -3594,13 +3766,13 @@ function Section:CreateDropdown(config)
 	function control:OpenMenu()
 		if self.Disabled then return self end
 		originalOpen(self)
-		if self.MainStroke then Tween(self.MainStroke, {Color = Google.Theme.Primary, Transparency = 0}, Motion.Fast) end
+		if self.MainStroke then animate(self.MainStroke, {Color = Google.Theme.Primary, Transparency = 0}, motion.Fast) end
 		return self
 	end
 	local originalClose = control.CloseMenu
 	function control:CloseMenu()
 		originalClose(self)
-		if self.MainStroke then Tween(self.MainStroke, {Color = Google.Theme.Border, Transparency = 0.08}, Motion.Fast) end
+		if self.MainStroke then animate(self.MainStroke, {Color = Google.Theme.Border, Transparency = 0.08}, motion.Fast) end
 		return self
 	end
 	local originalSelect = control.Select
@@ -3657,7 +3829,7 @@ function Section:CreateDropdown(config)
 		if originalApply then originalApply(self) end
 		decorateOptions(self)
 	end
-	AddDisableMethods(control, function(self)
+	addDisabledState(control, function(self)
 		if self.Main then self.Main.BackgroundTransparency = self.Disabled and 0.35 or 0 end
 	end)
 	control:RefreshOptions()
@@ -3666,19 +3838,19 @@ function Section:CreateDropdown(config)
 	return control
 end
 
-local OriginalSectionCreateTextbox = Section.CreateTextbox
+local createTextboxBase = Section.CreateTextbox
 function Section:CreateTextbox(config)
 	config = config or {}
-	local control = OriginalSectionCreateTextbox(self, config)
+	local control = createTextboxBase(self, config)
 	control.Disabled = config.Disabled or false
 	control.MaxLength = config.MaxLength
 	control.Min = config.Min
 	control.Max = config.Max
-	UseCallbackGuard(control)
+	guardCallback(control)
 	if control.Entry then
-		Corner(control.Entry, tonumber(config.CornerRadius) or 10)
-		control.EntryStroke = control.EntryStroke or EnsureStroke(control.Entry, "TextboxStroke", Google.Theme.Border, 0.08, 1)
-		control.EntryGradient = EnsureGradient(control.Entry, Google.Theme.Input, Blend(Google.Theme.Input, Google.Theme.Hover, 0.35), 90)
+		round(control.Entry, tonumber(config.CornerRadius) or 10)
+		control.EntryStroke = control.EntryStroke or getStroke(control.Entry, "TextboxStroke", Google.Theme.Border, 0.08, 1)
+		control.EntryGradient = getGradient(control.Entry, Google.Theme.Input, blend(Google.Theme.Input, Google.Theme.Hover, 0.35), 90)
 	end
 	if config.ClearButton ~= false and control.Entry then
 		control.ClearButton = create("TextButton", {
@@ -3694,15 +3866,15 @@ function Section:CreateTextbox(config)
 			AutoButtonColor = false,
 			Parent = control.Instance
 		})
-		Corner(control.ClearButton, 6)
-		Connect(control.Connections, control.ClearButton.MouseButton1Click, function()
+		round(control.ClearButton, 6)
+		bind(control.Connections, control.ClearButton.MouseButton1Click, function()
 			control:Set("")
 		end)
-		Connect(control.Connections, control.ClearButton.MouseEnter, function()
-			Tween(control.ClearButton, {BackgroundTransparency = 0}, Motion.Fast)
+		bind(control.Connections, control.ClearButton.MouseEnter, function()
+			animate(control.ClearButton, {BackgroundTransparency = 0}, motion.Fast)
 		end)
-		Connect(control.Connections, control.ClearButton.MouseLeave, function()
-			Tween(control.ClearButton, {BackgroundTransparency = 1}, Motion.Fast)
+		bind(control.Connections, control.ClearButton.MouseLeave, function()
+			animate(control.ClearButton, {BackgroundTransparency = 1}, motion.Fast)
 		end)
 	end
 	local originalSet = control.Set
@@ -3738,7 +3910,7 @@ function Section:CreateTextbox(config)
 		self.MaxLength = tonumber(length)
 		return self:Set(self.Value)
 	end
-	Connect(control.Connections, control.Entry:GetPropertyChangedSignal("Text"), function()
+	bind(control.Connections, control.Entry:GetPropertyChangedSignal("Text"), function()
 		if control.MaxLength and #control.Entry.Text > control.MaxLength then
 			control.Entry.Text = control.Entry.Text:sub(1, control.MaxLength)
 		end
@@ -3752,7 +3924,7 @@ function Section:CreateTextbox(config)
 		if self.EntryGradient then
 			self.EntryGradient.Color = ColorSequence.new({
 				ColorSequenceKeypoint.new(0, Google.Theme.Input),
-				ColorSequenceKeypoint.new(1, Blend(Google.Theme.Input, Google.Theme.Hover, 0.35))
+				ColorSequenceKeypoint.new(1, blend(Google.Theme.Input, Google.Theme.Hover, 0.35))
 			})
 		end
 		if self.ClearButton then
@@ -3760,7 +3932,7 @@ function Section:CreateTextbox(config)
 			self.ClearButton.TextColor3 = Google.Theme.Muted
 		end
 	end
-	AddDisableMethods(control, function(self)
+	addDisabledState(control, function(self)
 		if self.Entry then
 			self.Entry.TextEditable = not self.Disabled
 			self.Entry.BackgroundTransparency = self.Disabled and 0.4 or 0
@@ -3770,18 +3942,18 @@ function Section:CreateTextbox(config)
 	return control
 end
 
-local OriginalSectionCreateKeybind = Section.CreateKeybind
+local createKeybindBase = Section.CreateKeybind
 function Section:CreateKeybind(config)
 	config = config or {}
-	local control = OriginalSectionCreateKeybind(self, config)
+	local control = createKeybindBase(self, config)
 	control.Disabled = config.Disabled or false
-	UseCallbackGuard(control)
+	guardCallback(control)
 	if control.Button then
-		Corner(control.Button, tonumber(config.CornerRadius) or 10)
-		control.ButtonGradient = EnsureGradient(control.Button, Google.Theme.Input, Blend(Google.Theme.Input, Google.Theme.Hover, 0.45), 90)
+		round(control.Button, tonumber(config.CornerRadius) or 10)
+		control.ButtonGradient = getGradient(control.Button, Google.Theme.Input, blend(Google.Theme.Input, Google.Theme.Hover, 0.45), 90)
 	end
 	function control:SetText(text)
-		SetLabelText(self.Label, text)
+		setText(self.Label, text)
 		return self
 	end
 	function control:SetMode(mode)
@@ -3805,35 +3977,35 @@ function Section:CreateKeybind(config)
 		if self.ButtonGradient then
 			self.ButtonGradient.Color = ColorSequence.new({
 				ColorSequenceKeypoint.new(0, Google.Theme.Input),
-				ColorSequenceKeypoint.new(1, Blend(Google.Theme.Input, Google.Theme.Hover, 0.45))
+				ColorSequenceKeypoint.new(1, blend(Google.Theme.Input, Google.Theme.Hover, 0.45))
 			})
 		end
 	end
-	AddDisableMethods(control, function(self)
+	addDisabledState(control, function(self)
 		if self.Button then self.Button.BackgroundTransparency = self.Disabled and 0.4 or 0 end
 	end)
 	control:SetDisabled(control.Disabled)
 	return control
 end
 
-local OriginalSectionCreateColorPicker = Section.CreateColorPicker
+local createColorPickerBase = Section.CreateColorPicker
 function Section:CreateColorPicker(config)
 	config = config or {}
 	if not config.Colors then
-		config.Colors = EnhancedDefaults.ColorPalette
+		config.Colors = controlDefaults.ColorPalette
 	end
-	local control = OriginalSectionCreateColorPicker(self, config)
+	local control = createColorPickerBase(self, config)
 	control.Disabled = config.Disabled or false
-	UseCallbackGuard(control)
+	guardCallback(control)
 	if control.Button then
-		Corner(control.Button, tonumber(config.CornerRadius) or 10)
-		control.ButtonStroke = control.ButtonStroke or EnsureStroke(control.Button, "ColorButtonStroke", Google.Theme.Border, 0.08, 1)
+		round(control.Button, tonumber(config.CornerRadius) or 10)
+		control.ButtonStroke = control.ButtonStroke or getStroke(control.Button, "ColorButtonStroke", Google.Theme.Border, 0.08, 1)
 	end
 	function control:GetHex()
-		return FormatColorHex(self.Value)
+		return formatHex(self.Value)
 	end
 	function control:SetHex(value)
-		local color = ColorFromHex(value)
+		local color = colorFromHex(value)
 		if color then
 			self:Set(color)
 		end
@@ -3842,7 +4014,7 @@ function Section:CreateColorPicker(config)
 	function control:Close()
 		if self.Open and self.Button then
 			self.Open = false
-			Tween(self.Palette, {Size = UDim2.new(1, 0, 0, 0)}, Motion.Fast, nil, nil, function()
+			animate(self.Palette, {Size = UDim2.new(1, 0, 0, 0)}, motion.Fast, nil, nil, function()
 				self.Palette.Visible = false
 			end)
 			self.Instance.Size = UDim2.new(1, 0, 0, 38)
@@ -3861,22 +4033,22 @@ function Section:CreateColorPicker(config)
 		if originalApply then originalApply(self) end
 		if self.ButtonStroke then self.ButtonStroke.Color = Google.Theme.Border end
 	end
-	AddDisableMethods(control, function(self)
+	addDisabledState(control, function(self)
 		if self.Button then self.Button.BackgroundTransparency = self.Disabled and 0.45 or 0 end
 	end)
 	control:SetDisabled(control.Disabled)
 	return control
 end
 
-local OriginalSectionCreateLabel = Section.CreateLabel
+local createLabelBase = Section.CreateLabel
 function Section:CreateLabel(config)
 	if type(config) ~= "table" then
 		config = {Name = config}
 	end
 	config = config or {}
-	local control = OriginalSectionCreateLabel(self, config)
+	local control = createLabelBase(self, config)
 	function control:SetColor(color)
-		if IsColor(color) and self.Label then self.Label.TextColor3 = color end
+		if isColor(color) and self.Label then self.Label.TextColor3 = color end
 		return self
 	end
 	function control:SetSize(size)
@@ -3901,27 +4073,27 @@ function Section:CreateLabel(config)
 		self:RefreshSection()
 		return self
 	end
-	if config.Color and IsColor(config.Color) then control:SetColor(config.Color) end
+	if config.Color and isColor(config.Color) then control:SetColor(config.Color) end
 	if config.Size then control:SetSize(config.Size) end
 	if config.Alignment then control:SetAlignment(config.Alignment) end
 	return control
 end
 
-local OriginalSectionCreateParagraph = Section.CreateParagraph
+local createParagraphBase = Section.CreateParagraph
 function Section:CreateParagraph(config)
 	config = config or {}
-	local control = OriginalSectionCreateParagraph(self, config)
+	local control = createParagraphBase(self, config)
 	control.Variant = config.Variant or "Default"
 	if control.Instance then
-		Corner(control.Instance, tonumber(config.CornerRadius) or 10)
-		control.ParagraphGradient = EnsureGradient(control.Instance, Google.Theme.CardAlt, Blend(Google.Theme.CardAlt, Google.Theme.Hover, 0.35), 90)
+		round(control.Instance, tonumber(config.CornerRadius) or 10)
+		control.ParagraphGradient = getGradient(control.Instance, Google.Theme.CardAlt, blend(Google.Theme.CardAlt, Google.Theme.Hover, 0.35), 90)
 	end
 	function control:SetTitle(text)
-		if self.TitleLabel then SetLabelText(self.TitleLabel, text) end
+		if self.TitleLabel then setText(self.TitleLabel, text) end
 		return self
 	end
 	function control:SetText(text)
-		SetLabelText(self.TextLabel, text)
+		setText(self.TextLabel, text)
 		return self
 	end
 	local function applyParagraphVariant(self)
@@ -3939,11 +4111,11 @@ function Section:CreateParagraph(config)
 			strokeColor = Google.Theme.Danger
 		end
 		self.Instance.BackgroundColor3 = bg
-		if self.Stroke then self.Stroke.Color = strokeColor end
+		if self.outline then self.outline.Color = strokeColor end
 		if self.ParagraphGradient then
 			self.ParagraphGradient.Color = ColorSequence.new({
 				ColorSequenceKeypoint.new(0, bg),
-				ColorSequenceKeypoint.new(1, Blend(bg, Google.Theme.Hover, 0.35))
+				ColorSequenceKeypoint.new(1, blend(bg, Google.Theme.Hover, 0.35))
 			})
 		end
 	end
@@ -3961,23 +4133,23 @@ function Section:CreateParagraph(config)
 	return control
 end
 
-local OriginalSectionCreateImage = Section.CreateImage
+local createImageBase = Section.CreateImage
 function Section:CreateImage(config)
 	config = config or {}
-	local control = OriginalSectionCreateImage(self, config)
+	local control = createImageBase(self, config)
 	if control.ImageFrame then
-		Corner(control.ImageFrame, tonumber(config.ImageCornerRadius) or tonumber(config.CornerRadius) or 10)
-		control.ImageGradient = EnsureGradient(control.ImageFrame, Google.Theme.Input, Blend(Google.Theme.Input, Google.Theme.Hover, 0.35), 90)
+		round(control.ImageFrame, tonumber(config.ImageCornerRadius) or tonumber(config.CornerRadius) or 10)
+		control.ImageGradient = getGradient(control.ImageFrame, Google.Theme.Input, blend(Google.Theme.Input, Google.Theme.Hover, 0.35), 90)
 	end
 	if control.Image then
 		control.Image.ImageTransparency = tonumber(config.Transparency) or 0
 	end
 	function control:SetTitle(text)
-		if self.TitleLabel then SetLabelText(self.TitleLabel, text) end
+		if self.TitleLabel then setText(self.TitleLabel, text) end
 		return self
 	end
 	function control:SetDescription(text)
-		if self.DescriptionLabel then SetLabelText(self.DescriptionLabel, text) end
+		if self.DescriptionLabel then setText(self.DescriptionLabel, text) end
 		return self
 	end
 	function control:SetHeight(height)
@@ -3997,12 +4169,12 @@ function Section:CreateImage(config)
 		return self
 	end
 	function control:SetRounded(radius)
-		if self.ImageFrame then Corner(self.ImageFrame, tonumber(radius) or 10) end
+		if self.ImageFrame then round(self.ImageFrame, tonumber(radius) or 10) end
 		return self
 	end
 	if type(config.Callback) == "function" and control.ImageFrame then
 		control.ImageFrame.Active = true
-		Connect(control.Connections, control.ImageFrame.InputBegan, function(input)
+		bind(control.Connections, control.ImageFrame.InputBegan, function(input)
 			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 				config.Callback(control:Get())
 			end
@@ -4014,30 +4186,30 @@ function Section:CreateImage(config)
 		if self.ImageGradient then
 			self.ImageGradient.Color = ColorSequence.new({
 				ColorSequenceKeypoint.new(0, Google.Theme.Input),
-				ColorSequenceKeypoint.new(1, Blend(Google.Theme.Input, Google.Theme.Hover, 0.35))
+				ColorSequenceKeypoint.new(1, blend(Google.Theme.Input, Google.Theme.Hover, 0.35))
 			})
 		end
 	end
 	return control
 end
 
-local OriginalSectionCreateDivider = Section.CreateDivider
+local createDividerBase = Section.CreateDivider
 function Section:CreateDivider(config)
 	if type(config) ~= "table" then
 		config = {Name = config}
 	end
 	config = config or {}
-	local control = OriginalSectionCreateDivider(self, config)
+	local control = createDividerBase(self, config)
 	local color = config.Color or Google.Theme.Border
-	if control.Left then EnsureGradient(control.Left, Color3.fromRGB(255, 255, 255), color, 0) end
-	if control.Right then EnsureGradient(control.Right, color, Color3.fromRGB(255, 255, 255), 0) end
-	if control.Line then EnsureGradient(control.Line, Google.Theme.Border, Blend(Google.Theme.Border, Google.Theme.Primary, 0.35), 0) end
+	if control.Left then getGradient(control.Left, Color3.fromRGB(255, 255, 255), color, 0) end
+	if control.Right then getGradient(control.Right, color, Color3.fromRGB(255, 255, 255), 0) end
+	if control.Line then getGradient(control.Line, Google.Theme.Border, blend(Google.Theme.Border, Google.Theme.Primary, 0.35), 0) end
 	function control:SetText(text)
-		if self.Label then SetLabelText(self.Label, text) end
+		if self.Label then setText(self.Label, text) end
 		return self
 	end
 	function control:SetColor(newColor)
-		if IsColor(newColor) then
+		if isColor(newColor) then
 			if self.Left then self.Left.BackgroundColor3 = newColor end
 			if self.Right then self.Right.BackgroundColor3 = newColor end
 			if self.Line then self.Line.BackgroundColor3 = newColor end
@@ -4056,223 +4228,18 @@ function Section:CreateDivider(config)
 	return control
 end
 
-local PreviousGoogleThemeList = Google.Themes
+local baseThemes = Google.Themes
 Google.Themes = {
-	Google = PreviousGoogleThemeList.Google,
-	Red = PreviousGoogleThemeList.Red,
-	Yellow = PreviousGoogleThemeList.Yellow,
-	Green = PreviousGoogleThemeList.Green
+	Google = baseThemes.Google,
+	Red = baseThemes.Red,
+	Yellow = baseThemes.Yellow,
+	Green = baseThemes.Green,
+	DarkGoogle = baseThemes.DarkGoogle,
+	DarkRed = baseThemes.DarkRed,
+	DarkYellow = baseThemes.DarkYellow,
+	DarkGreen = baseThemes.DarkGreen
 }
 Google.ActiveTheme = Google.Themes[Google.ActiveTheme] and Google.ActiveTheme or "Google"
 Google.Theme = Google.Themes[Google.ActiveTheme]
-
-local function SetFullCorner(instance)
-	if not instance then
-		return nil
-	end
-	for _, child in ipairs(instance:GetChildren()) do
-		if child:IsA("UICorner") then
-			child.CornerRadius = UDim.new(1, 0)
-			return child
-		end
-	end
-	return FullCorner(instance)
-end
-
-local function RemoveVisualChildren(instance, className, exceptName)
-	if not instance then
-		return
-	end
-	for _, child in ipairs(instance:GetChildren()) do
-		if child:IsA(className) and child.Name ~= exceptName then
-			pcall(function()
-				child:Destroy()
-			end)
-		end
-	end
-end
-
-local function ApplyCleanToggleVisual(control)
-	if not control then
-		return
-	end
-	local on = control.Value and true or false
-	local switchColor = on and Google.Theme.Primary or Google.Theme.BorderStrong
-	if control.Switch then
-		control.Switch.Size = UDim2.fromOffset(48, 24)
-		control.Switch.Position = UDim2.new(1, -48, 0.5, -12)
-		control.Switch.BackgroundColor3 = switchColor
-		control.Switch.BackgroundTransparency = control.Disabled and 0.45 or 0
-		control.Switch.ClipsDescendants = true
-		SetFullCorner(control.Switch)
-		RemoveVisualChildren(control.Switch, "UIStroke")
-		RemoveVisualChildren(control.Switch, "UIGradient")
-	end
-	if control.Knob then
-		control.Knob.Size = UDim2.fromOffset(20, 20)
-		control.Knob.Position = on and UDim2.new(1, -22, 0.5, -10) or UDim2.fromOffset(2, 2)
-		control.Knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-		control.Knob.BackgroundTransparency = 0
-		control.Knob.BorderSizePixel = 0
-		SetFullCorner(control.Knob)
-		RemoveVisualChildren(control.Knob, "UIStroke")
-		RemoveVisualChildren(control.Knob, "UIGradient")
-	end
-	control.SwitchStroke = nil
-	control.SwitchGradient = nil
-	control.KnobStroke = nil
-end
-
-local BaseCleanToggleCreate = Section.CreateToggle
-function Section:CreateToggle(config)
-	config = config or {}
-	local control = BaseCleanToggleCreate(self, config)
-	ApplyCleanToggleVisual(control)
-	local previousSet = control.Set
-	function control:Set(value)
-		if self.Disabled then
-			return self
-		end
-		self.Value = value and true or false
-		local switchColor = self.Value and Google.Theme.Primary or Google.Theme.BorderStrong
-		if self.Switch then
-			Tween(self.Switch, {BackgroundColor3 = switchColor, BackgroundTransparency = 0}, Motion.Base)
-		end
-		if self.Knob then
-			Tween(self.Knob, {Position = self.Value and UDim2.new(1, -22, 0.5, -10) or UDim2.fromOffset(2, 2)}, Motion.Base)
-		end
-		self.Callback(self.Value)
-		return self
-	end
-	local previousApply = control.ApplyTheme
-	function control:ApplyTheme()
-		if previousApply then previousApply(self) end
-		ApplyCleanToggleVisual(self)
-	end
-	local previousSetDisabled = control.SetDisabled
-	if previousSetDisabled then
-		function control:SetDisabled(value)
-			previousSetDisabled(self, value)
-			ApplyCleanToggleVisual(self)
-			return self
-		end
-	end
-	ApplyCleanToggleVisual(control)
-	return control
-end
-
-local function ApplyCleanSliderVisual(control, config)
-	if not control then
-		return
-	end
-	local trackY = config and config.Description and 54 or 38
-	if control.Track then
-		control.Track.Size = UDim2.new(1, -22, 0, 8)
-		control.Track.Position = UDim2.fromOffset(11, trackY)
-		control.Track.BackgroundColor3 = Google.Theme.Border
-		control.Track.BackgroundTransparency = control.Disabled and 0.45 or 0
-		control.Track.BorderSizePixel = 0
-		control.Track.ClipsDescendants = false
-		SetFullCorner(control.Track)
-		RemoveVisualChildren(control.Track, "UIStroke")
-	end
-	if control.Fill then
-		control.Fill.BackgroundColor3 = Google.Theme.Primary
-		control.Fill.BackgroundTransparency = 0
-		control.Fill.BorderSizePixel = 0
-		SetFullCorner(control.Fill)
-		RemoveVisualChildren(control.Fill, "UIGradient")
-	end
-	if control.Knob then
-		control.Knob.Size = UDim2.fromOffset(18, 18)
-		control.Knob.BackgroundColor3 = Google.Theme.Primary
-		control.Knob.BackgroundTransparency = 0
-		control.Knob.BorderSizePixel = 0
-		SetFullCorner(control.Knob)
-		RemoveVisualChildren(control.Knob, "UIStroke")
-		RemoveVisualChildren(control.Knob, "UIGradient")
-	end
-	if control.KnobDot then
-		pcall(function()
-			control.KnobDot:Destroy()
-		end)
-		control.KnobDot = nil
-	end
-	control.KnobStroke = nil
-	control.TrackStroke = nil
-	control.FillGradient = nil
-	control.KnobScale = nil
-end
-
-local BaseCleanSliderCreate = Section.CreateSlider
-function Section:CreateSlider(config)
-	config = config or {}
-	local control = BaseCleanSliderCreate(self, config)
-	ApplyCleanSliderVisual(control, config)
-	local function formatted(self)
-		if type(self.ValueFormat) == "function" then
-			local ok, result = pcall(self.ValueFormat, self.Value)
-			if ok then
-				return tostring(result)
-			end
-		end
-		return tostring(self.Prefix or "") .. tostring(self.Value) .. tostring(self.Suffix or "")
-	end
-	function control:UpdateVisual()
-		local alpha = 0
-		if self.Max ~= self.Min then
-			alpha = math.clamp((self.Value - self.Min) / (self.Max - self.Min), 0, 1)
-		end
-		if self.ValueLabel then
-			self.ValueLabel.Text = formatted(self)
-		end
-		local duration = self.Dragging and 0.03 or Motion.Base
-		if self.Fill then
-			Tween(self.Fill, {Size = UDim2.fromScale(alpha, 1)}, duration)
-		end
-		if self.Knob then
-			Tween(self.Knob, {Position = UDim2.fromScale(alpha, 0.5)}, duration)
-		end
-	end
-	local previousSet = control.Set
-	function control:Set(value)
-		if self.Disabled then
-			return self
-		end
-		if self.Step and tonumber(self.Step) and tonumber(self.Step) > 0 then
-			local step = tonumber(self.Step)
-			value = self.Min + math.floor(((value - self.Min) / step) + 0.5) * step
-		end
-		local precision = self.Precision or 0
-		value = math.clamp(value, self.Min, self.Max)
-		if precision <= 0 then
-			value = math.floor(value + 0.5)
-		else
-			local power = 10 ^ precision
-			value = math.floor(value * power + 0.5) / power
-		end
-		self.Value = value
-		self:UpdateVisual()
-		self.Callback(self.Value)
-		return self
-	end
-	local previousApply = control.ApplyTheme
-	function control:ApplyTheme()
-		if previousApply then previousApply(self) end
-		ApplyCleanSliderVisual(self, config)
-		self:UpdateVisual()
-	end
-	local previousSetDisabled = control.SetDisabled
-	if previousSetDisabled then
-		function control:SetDisabled(value)
-			previousSetDisabled(self, value)
-			ApplyCleanSliderVisual(self, config)
-			self:UpdateVisual()
-			return self
-		end
-	end
-	control:UpdateVisual()
-	return control
-end
 
 return Google
