@@ -1,6 +1,9 @@
 local Google = {}
 Google.__index = Google
-Google.Build = "components-padding-fixed"
+Google.Build = "components-config-system"
+Google.Flags = Google.Flags or {}
+Google.Options = Google.Options or {}
+Google.ConfigManager = Google.ConfigManager or nil
 
 local function getService(name)
 	local service = game:GetService(name)
@@ -12,6 +15,7 @@ local UserInputService = getService("UserInputService")
 local Players = getService("Players")
 local CoreGui = getService("CoreGui")
 local Workspace = getService("Workspace")
+local HttpService = getService("HttpService")
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -5406,5 +5410,638 @@ function Tab:CreateLoading(config) return self:GetStandaloneSection():CreateLoad
 function Tab:AddLoading(config) return self:CreateLoading(config) end
 function Tab:CreateTable(config) return self:GetStandaloneSection():CreateTable(config) end
 function Tab:AddTable(config) return self:CreateTable(config) end
+
+
+local function filesReady()
+	if type(writefile) ~= "function" then return false, "File functions unavailable" end
+	if type(readfile) ~= "function" then return false, "File functions unavailable" end
+	if type(isfile) ~= "function" then return false, "File functions unavailable" end
+	if type(makefolder) ~= "function" then return false, "File functions unavailable" end
+	if type(isfolder) ~= "function" then return false, "File functions unavailable" end
+	if type(delfile) ~= "function" then return false, "File functions unavailable" end
+	return true
+end
+
+local function cleanConfigName(name)
+	name = tostring(name or "default")
+	name = name:gsub("[%z\1-\31]", "")
+	name = name:gsub("[\\/:*?\"<>|]", "_")
+	name = name:gsub("^%s+", ""):gsub("%s+$", "")
+	if name == "" then
+		name = "default"
+	end
+	return name
+end
+
+local function ensureConfigFolder(path)
+	local ok, message = filesReady()
+	if not ok then
+		return false, message
+	end
+	local current = ""
+	for part in tostring(path or ""):gmatch("[^/\\]+") do
+		current = current == "" and part or (current .. "/" .. part)
+		if not isfolder(current) then
+			local made, err = pcall(makefolder, current)
+			if not made then
+				return false, tostring(err)
+			end
+		end
+	end
+	return true
+end
+
+local function copyArray(value)
+	local result = {}
+	if type(value) == "table" then
+		for i, item in ipairs(value) do
+			result[i] = item
+		end
+	end
+	return result
+end
+
+local function colorToData(color)
+	if typeof(color) == "Color3" then
+		return {
+			R = math.floor(color.R * 255),
+			G = math.floor(color.G * 255),
+			B = math.floor(color.B * 255)
+		}
+	end
+	if type(color) == "table" and color.R and color.G and color.B then
+		return {
+			R = math.clamp(math.floor(tonumber(color.R) or 0), 0, 255),
+			G = math.clamp(math.floor(tonumber(color.G) or 0), 0, 255),
+			B = math.clamp(math.floor(tonumber(color.B) or 0), 0, 255)
+		}
+	end
+	return {R = 255, G = 255, B = 255}
+end
+
+local function colorFromData(value, fallback)
+	if typeof(value) == "Color3" then
+		return value
+	end
+	if type(value) == "table" and value.R and value.G and value.B then
+		return Color3.fromRGB(
+			math.clamp(math.floor(tonumber(value.R) or 0), 0, 255),
+			math.clamp(math.floor(tonumber(value.G) or 0), 0, 255),
+			math.clamp(math.floor(tonumber(value.B) or 0), 0, 255)
+		)
+	end
+	return fallback or Color3.fromRGB(255, 255, 255)
+end
+
+local function keyToData(value, mode)
+	local key = value
+	if typeof(value) == "EnumItem" then
+		key = value.Name
+	elseif type(value) == "table" then
+		key = value.Key or value.KeyCode or value.Name or value[1]
+	else
+		key = tostring(value or "Unknown")
+	end
+	return {Key = key, Mode = mode or "Toggle"}
+end
+
+local function keyFromData(value, control)
+	local mode = control and control.Mode or "Toggle"
+	local key = value
+	if type(value) == "table" then
+		key = value.Key or value.KeyCode or value.Name or value[1]
+		mode = value.Mode or mode
+	end
+	if control then
+		control.Mode = mode or control.Mode
+	end
+	if typeof(key) == "EnumItem" then
+		return key
+	end
+	key = tostring(key or "Unknown")
+	return Enum.KeyCode[key] or Enum.KeyCode.Unknown
+end
+
+local function safeValue(value)
+	local valueType = typeof(value)
+	if valueType == "Color3" then
+		return colorToData(value)
+	end
+	if valueType == "EnumItem" then
+		return value.Name
+	end
+	if type(value) ~= "table" then
+		return value
+	end
+	local result = {}
+	for key, item in pairs(value) do
+		result[key] = safeValue(item)
+	end
+	return result
+end
+
+local function readJson(path)
+	local ok, message = filesReady()
+	if not ok then
+		return nil, message
+	end
+	if not isfile(path) then
+		return nil, "File not found"
+	end
+	local readOk, contents = pcall(readfile, path)
+	if not readOk then
+		return nil, tostring(contents)
+	end
+	local decodedOk, decoded = pcall(function()
+		return HttpService:JSONDecode(contents)
+	end)
+	if not decodedOk then
+		return nil, tostring(decoded)
+	end
+	return decoded
+end
+
+local function writeJson(path, value)
+	local ok, message = filesReady()
+	if not ok then
+		return false, message
+	end
+	local encodedOk, encoded = pcall(function()
+		return HttpService:JSONEncode(value)
+	end)
+	if not encodedOk then
+		return false, tostring(encoded)
+	end
+	local writeOk, err = pcall(writefile, path, encoded)
+	if not writeOk then
+		return false, tostring(err)
+	end
+	return true
+end
+
+local function normalizeStoredValue(kind, value, control)
+	if kind == "Toggle" then
+		return value and true or false
+	elseif kind == "Slider" then
+		return tonumber(value) or 0
+	elseif kind == "Textbox" then
+		return tostring(value or "")
+	elseif kind == "Dropdown" then
+		if control and control.Multi then
+			return copyArray(value)
+		end
+		return value == nil and nil or tostring(value)
+	elseif kind == "Keybind" then
+		return keyToData(value, control and control.Mode)
+	elseif kind == "ColorPicker" then
+		return colorToData(value)
+	end
+	return safeValue(value)
+end
+
+local function normalizeLoadedValue(kind, value, control)
+	if kind == "Toggle" then
+		return value and true or false
+	elseif kind == "Slider" then
+		return tonumber(value) or (control and control.Value) or 0
+	elseif kind == "Textbox" then
+		return tostring(value or "")
+	elseif kind == "Dropdown" then
+		if control and control.Multi then
+			return copyArray(value)
+		end
+		return value
+	elseif kind == "Keybind" then
+		return keyFromData(value, control)
+	elseif kind == "ColorPicker" then
+		return colorFromData(value, control and control.Value)
+	end
+	return value
+end
+
+local function autoSaveFlags()
+	local manager = Google.ConfigManager
+	if manager and manager.AutoSave then
+		manager:Save()
+	end
+end
+
+local function registerFlag(control, config, kind)
+	if not control or type(config) ~= "table" then
+		return control
+	end
+	local flag = config.Flag
+	if not flag then
+		return control
+	end
+	flag = tostring(flag)
+	control.Flag = flag
+	control.CallbackOnLoad = config.CallbackOnLoad == true
+	Google.Options[flag] = control
+
+	local previousGet = control.Get
+	local previousSet = control.Set
+	local callback = control.Callback
+	if type(callback) == "function" then
+		control.Callback = function(...)
+			if control.LoadingFromConfig and not control.CallbackOnLoad then
+				return
+			end
+			return callback(...)
+		end
+	end
+	local setCallback = control.SetCallback
+	function control:SetCallback(fn)
+		if setCallback then
+			setCallback(self, fn)
+		else
+			self.RawCallback = type(fn) == "function" and fn or function() end
+			self.Callback = self.RawCallback
+		end
+		local nextCallback = self.Callback or function() end
+		self.Callback = function(...)
+			if self.LoadingFromConfig and not self.CallbackOnLoad then
+				return
+			end
+			return nextCallback(...)
+		end
+		return self
+	end
+
+	function control:Get()
+		local value
+		if previousGet then
+			value = previousGet(self)
+		else
+			value = self.Value
+		end
+		return normalizeStoredValue(kind, value, self)
+	end
+
+	function control:Set(value, fromConfig)
+		local loadedValue = normalizeLoadedValue(kind, value, self)
+		local wasLoading = self.LoadingFromConfig
+		local wasDisabled = self.Disabled
+		self.LoadingFromConfig = fromConfig and true or false
+		if fromConfig and wasDisabled then
+			self.Disabled = false
+		end
+		if previousSet then
+			previousSet(self, loadedValue)
+		else
+			self.Value = loadedValue
+		end
+		if fromConfig and wasDisabled then
+			self.Disabled = wasDisabled
+			if self.SetDisabled then
+				self:SetDisabled(true)
+			end
+		end
+		self.LoadingFromConfig = wasLoading
+		Google.Flags[flag] = self:Get()
+		if not fromConfig then
+			autoSaveFlags()
+		end
+		return self
+	end
+
+	if Google.Flags[flag] ~= nil then
+		control:Set(Google.Flags[flag], true)
+	else
+		Google.Flags[flag] = control:Get()
+	end
+	return control
+end
+
+function Google:SetFlag(flag, value, fromConfig)
+	flag = tostring(flag)
+	local option = Google.Options[flag]
+	if option and type(option.Set) == "function" then
+		option:Set(value, fromConfig)
+		Google.Flags[flag] = type(option.Get) == "function" and option:Get() or safeValue(value)
+	else
+		Google.Flags[flag] = safeValue(value)
+		if not fromConfig then
+			autoSaveFlags()
+		end
+	end
+	return Google.Flags[flag]
+end
+
+function Google:GetFlag(flag, default)
+	local value = Google.Flags[tostring(flag)]
+	if value == nil then
+		return default
+	end
+	return value
+end
+
+function Google:CreateConfigManager(config)
+	config = config or {}
+	local manager = {}
+	manager.Folder = config.Folder or "GoogleUI/Configs"
+	manager.Extension = config.Extension or ".json"
+	manager.AutoSave = config.AutoSave == true
+	manager.CurrentConfig = config.Default or config.Name or "default"
+	manager.Ignore = {}
+	manager.AutoloadFile = manager.Folder .. "/__autoload.txt"
+	manager.IndexFile = manager.Folder .. "/__configs" .. manager.Extension
+
+	function manager:Path(name)
+		return self.Folder .. "/" .. cleanConfigName(name or self.CurrentConfig or "default") .. self.Extension
+	end
+
+	function manager:SetIgnore(flags)
+		self.Ignore = {}
+		if type(flags) == "table" then
+			for key, value in pairs(flags) do
+				if type(key) == "number" then
+					self.Ignore[tostring(value)] = true
+				elseif value then
+					self.Ignore[tostring(key)] = true
+				end
+			end
+		end
+		return self
+	end
+
+	function manager:ReadIndex()
+		local ok, message = filesReady()
+		if not ok then
+			return nil, message
+		end
+		ensureConfigFolder(self.Folder)
+		if not isfile(self.IndexFile) then
+			return {}
+		end
+		local data, err = readJson(self.IndexFile)
+		if type(data) ~= "table" then
+			return {}, err
+		end
+		return data
+	end
+
+	function manager:WriteIndex(list)
+		local ok, message = ensureConfigFolder(self.Folder)
+		if not ok then
+			return false, message
+		end
+		return writeJson(self.IndexFile, list or {})
+	end
+
+	function manager:AddToIndex(name)
+		name = cleanConfigName(name)
+		local list = self:ReadIndex()
+		if type(list) ~= "table" then
+			list = {}
+		end
+		for _, item in ipairs(list) do
+			if item == name then
+				return self:WriteIndex(list)
+			end
+		end
+		table.insert(list, name)
+		table.sort(list)
+		return self:WriteIndex(list)
+	end
+
+	function manager:RemoveFromIndex(name)
+		name = cleanConfigName(name)
+		local list = self:ReadIndex()
+		if type(list) ~= "table" then
+			list = {}
+		end
+		for index = #list, 1, -1 do
+			if list[index] == name then
+				table.remove(list, index)
+			end
+		end
+		return self:WriteIndex(list)
+	end
+
+	function manager:Save(name)
+		name = cleanConfigName(name or self.CurrentConfig or "default")
+		local ok, message = ensureConfigFolder(self.Folder)
+		if not ok then
+			return false, message
+		end
+		local data = {}
+		for flag, option in pairs(Google.Options) do
+			if not self.Ignore[flag] and option and type(option.Get) == "function" then
+				data[flag] = safeValue(option:Get())
+			end
+		end
+		local saved, err = writeJson(self:Path(name), data)
+		if not saved then
+			return false, err
+		end
+		self.CurrentConfig = name
+		self:AddToIndex(name)
+		return true, self:Path(name)
+	end
+
+	function manager:Load(name)
+		name = cleanConfigName(name or self.CurrentConfig or "default")
+		local ok, message = ensureConfigFolder(self.Folder)
+		if not ok then
+			return false, message
+		end
+		local data, err = readJson(self:Path(name))
+		if type(data) ~= "table" then
+			return false, err or "Invalid config"
+		end
+		for flag, value in pairs(data) do
+			if not self.Ignore[flag] then
+				Google:SetFlag(flag, value, true)
+			end
+		end
+		self.CurrentConfig = name
+		self:AddToIndex(name)
+		return true, data
+	end
+
+	function manager:Delete(name)
+		name = cleanConfigName(name or self.CurrentConfig or "default")
+		local ok, message = ensureConfigFolder(self.Folder)
+		if not ok then
+			return false, message
+		end
+		local path = self:Path(name)
+		if isfile(path) then
+			local deleted, err = pcall(delfile, path)
+			if not deleted then
+				return false, tostring(err)
+			end
+		end
+		self:RemoveFromIndex(name)
+		return true
+	end
+
+	function manager:SetAutoload(name)
+		name = cleanConfigName(name or self.CurrentConfig or "default")
+		local ok, message = ensureConfigFolder(self.Folder)
+		if not ok then
+			return false, message
+		end
+		local saved, err = pcall(writefile, self.AutoloadFile, name)
+		if not saved then
+			return false, tostring(err)
+		end
+		return true, name
+	end
+
+	function manager:ClearAutoload()
+		local ok, message = ensureConfigFolder(self.Folder)
+		if not ok then
+			return false, message
+		end
+		if isfile(self.AutoloadFile) then
+			local deleted, err = pcall(delfile, self.AutoloadFile)
+			if not deleted then
+				return false, tostring(err)
+			end
+		end
+		return true
+	end
+
+	function manager:LoadAutoloadConfig()
+		local ok, message = ensureConfigFolder(self.Folder)
+		if not ok then
+			return false, message
+		end
+		if not isfile(self.AutoloadFile) then
+			return false, "No autoload config"
+		end
+		local readOk, name = pcall(readfile, self.AutoloadFile)
+		if not readOk then
+			return false, tostring(name)
+		end
+		name = cleanConfigName(name)
+		return self:Load(name)
+	end
+
+	function manager:GetConfigList()
+		local ok, message = ensureConfigFolder(self.Folder)
+		if not ok then
+			return false, message
+		end
+		local found = {}
+		local list = self:ReadIndex()
+		if type(list) == "table" then
+			for _, item in ipairs(list) do
+				found[cleanConfigName(item)] = true
+			end
+		end
+		if type(listfiles) == "function" then
+			local scanned = pcall(function()
+				for _, path in ipairs(listfiles(self.Folder)) do
+					local fileName = tostring(path):match("([^/\\]+)$")
+					if fileName and fileName:sub(-#self.Extension) == self.Extension and fileName ~= "__configs" .. self.Extension then
+						found[fileName:sub(1, #fileName - #self.Extension)] = true
+					end
+				end
+			end)
+		end
+		local result = {}
+		for name in pairs(found) do
+			table.insert(result, name)
+		end
+		table.sort(result)
+		self:WriteIndex(result)
+		return result
+	end
+
+	Google.ConfigManager = manager
+	return manager
+end
+
+local configCreateToggle = Section.CreateToggle
+function Section:CreateToggle(config)
+	config = config or {}
+	return registerFlag(configCreateToggle(self, config), config, "Toggle")
+end
+
+local configCreateSlider = Section.CreateSlider
+function Section:CreateSlider(config)
+	config = config or {}
+	return registerFlag(configCreateSlider(self, config), config, "Slider")
+end
+
+local configCreateTextbox = Section.CreateTextbox
+function Section:CreateTextbox(config)
+	config = config or {}
+	return registerFlag(configCreateTextbox(self, config), config, "Textbox")
+end
+
+local configCreateDropdown = Section.CreateDropdown
+function Section:CreateDropdown(config)
+	config = config or {}
+	return registerFlag(configCreateDropdown(self, config), config, "Dropdown")
+end
+
+local configCreateKeybind = Section.CreateKeybind
+function Section:CreateKeybind(config)
+	config = config or {}
+	return registerFlag(configCreateKeybind(self, config), config, "Keybind")
+end
+
+local configCreateColorPicker = Section.CreateColorPicker
+function Section:CreateColorPicker(config)
+	config = config or {}
+	return registerFlag(configCreateColorPicker(self, config), config, "ColorPicker")
+end
+
+function Tab:CreateConfigSection(config)
+	config = config or {}
+	local manager = config.Manager or Google.ConfigManager or Google:CreateConfigManager({})
+	local section = self:CreateSection({Name = config.Name or "Configs", Icon = config.Icon or "save"})
+	local nameBox = section:CreateTextbox({Name = "Config Name", Placeholder = "default", Default = manager.CurrentConfig or "default", ClearButton = true})
+	local list = section:CreateDropdown({Name = "Saved Configs", Placeholder = "Select config", Options = manager:GetConfigList() or {}, Callback = function(value)
+		if value then
+			nameBox:Set(value)
+		end
+	end})
+	local api = {Section = section, Input = nameBox, Dropdown = list, Manager = manager}
+	function api:GetName()
+		return cleanConfigName(nameBox:Get())
+	end
+	function api:Refresh()
+		local configs = manager:GetConfigList()
+		if type(configs) ~= "table" then
+			configs = {}
+		end
+		if list.SetOptions then
+			list:SetOptions(configs)
+		elseif list.Refresh then
+			list:Refresh(configs)
+		end
+		return self
+	end
+	section:CreateButton({Name = "Save", Icon = "save", Callback = function()
+		manager:Save(api:GetName())
+		api:Refresh()
+	end})
+	section:CreateButton({Name = "Load", Icon = "download", Callback = function()
+		manager:Load(api:GetName())
+	end})
+	section:CreateButton({Name = "Delete", Icon = "trash", Variant = "Danger", Callback = function()
+		manager:Delete(api:GetName())
+		api:Refresh()
+	end})
+	section:CreateButton({Name = "Set Autoload", Icon = "check", Callback = function()
+		manager:SetAutoload(api:GetName())
+	end})
+	section:CreateButton({Name = "Clear Autoload", Icon = "x", Variant = "Secondary", Callback = function()
+		manager:ClearAutoload()
+	end})
+	section:CreateButton({Name = "Load Autoload", Icon = "refresh-cw", Callback = function()
+		manager:LoadAutoloadConfig()
+	end})
+	section:CreateButton({Name = "Refresh List", Icon = "refresh-cw", Variant = "Secondary", Callback = function()
+		api:Refresh()
+	end})
+	api:Refresh()
+	return api
+end
 
 return Google
