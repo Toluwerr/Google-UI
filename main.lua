@@ -1,5 +1,6 @@
 local Google = {}
 Google.__index = Google
+Google.Build = "components-padding-fixed"
 
 local function getService(name)
 	local service = game:GetService(name)
@@ -359,6 +360,94 @@ Google.Themes = {
 		Input = Color3.fromRGB(255, 255, 255),
 		Hover = Color3.fromRGB(240, 249, 244),
 		Shadow = Color3.fromRGB(15, 23, 42)
+	},
+	DarkGoogle = {
+		Window = Color3.fromRGB(18, 20, 24),
+		Topbar = Color3.fromRGB(23, 26, 31),
+		Sidebar = Color3.fromRGB(21, 24, 29),
+		Page = Color3.fromRGB(14, 16, 20),
+		Card = Color3.fromRGB(26, 30, 36),
+		CardAlt = Color3.fromRGB(31, 36, 43),
+		Text = Color3.fromRGB(238, 242, 247),
+		Muted = Color3.fromRGB(156, 166, 182),
+		Subtle = Color3.fromRGB(104, 116, 134),
+		Border = Color3.fromRGB(43, 49, 59),
+		BorderStrong = Color3.fromRGB(63, 71, 85),
+		Primary = Color3.fromRGB(66, 133, 244),
+		PrimaryHover = Color3.fromRGB(95, 157, 247),
+		PrimarySoft = Color3.fromRGB(24, 47, 86),
+		Success = Color3.fromRGB(52, 168, 83),
+		Warning = Color3.fromRGB(251, 188, 4),
+		Danger = Color3.fromRGB(234, 67, 53),
+		Input = Color3.fromRGB(18, 21, 26),
+		Hover = Color3.fromRGB(35, 40, 48),
+		Shadow = Color3.fromRGB(0, 0, 0)
+	},
+	DarkRed = {
+		Window = Color3.fromRGB(24, 18, 18),
+		Topbar = Color3.fromRGB(31, 22, 21),
+		Sidebar = Color3.fromRGB(29, 20, 20),
+		Page = Color3.fromRGB(18, 13, 13),
+		Card = Color3.fromRGB(36, 26, 25),
+		CardAlt = Color3.fromRGB(43, 31, 30),
+		Text = Color3.fromRGB(248, 238, 237),
+		Muted = Color3.fromRGB(187, 153, 150),
+		Subtle = Color3.fromRGB(137, 98, 95),
+		Border = Color3.fromRGB(64, 42, 40),
+		BorderStrong = Color3.fromRGB(92, 57, 54),
+		Primary = Color3.fromRGB(234, 67, 53),
+		PrimaryHover = Color3.fromRGB(247, 99, 87),
+		PrimarySoft = Color3.fromRGB(83, 31, 28),
+		Success = Color3.fromRGB(52, 168, 83),
+		Warning = Color3.fromRGB(251, 188, 4),
+		Danger = Color3.fromRGB(255, 96, 84),
+		Input = Color3.fromRGB(24, 17, 17),
+		Hover = Color3.fromRGB(52, 34, 32),
+		Shadow = Color3.fromRGB(0, 0, 0)
+	},
+	DarkYellow = {
+		Window = Color3.fromRGB(23, 21, 16),
+		Topbar = Color3.fromRGB(31, 28, 20),
+		Sidebar = Color3.fromRGB(28, 25, 18),
+		Page = Color3.fromRGB(17, 15, 11),
+		Card = Color3.fromRGB(35, 31, 22),
+		CardAlt = Color3.fromRGB(42, 37, 26),
+		Text = Color3.fromRGB(247, 242, 229),
+		Muted = Color3.fromRGB(184, 169, 128),
+		Subtle = Color3.fromRGB(135, 117, 78),
+		Border = Color3.fromRGB(64, 56, 36),
+		BorderStrong = Color3.fromRGB(92, 78, 46),
+		Primary = Color3.fromRGB(251, 188, 4),
+		PrimaryHover = Color3.fromRGB(255, 207, 68),
+		PrimarySoft = Color3.fromRGB(81, 61, 17),
+		Success = Color3.fromRGB(52, 168, 83),
+		Warning = Color3.fromRGB(255, 207, 68),
+		Danger = Color3.fromRGB(234, 67, 53),
+		Input = Color3.fromRGB(24, 21, 15),
+		Hover = Color3.fromRGB(50, 43, 27),
+		Shadow = Color3.fromRGB(0, 0, 0)
+	},
+	DarkGreen = {
+		Window = Color3.fromRGB(16, 22, 18),
+		Topbar = Color3.fromRGB(21, 30, 24),
+		Sidebar = Color3.fromRGB(19, 27, 22),
+		Page = Color3.fromRGB(12, 17, 14),
+		Card = Color3.fromRGB(24, 34, 28),
+		CardAlt = Color3.fromRGB(29, 42, 34),
+		Text = Color3.fromRGB(236, 246, 239),
+		Muted = Color3.fromRGB(146, 181, 157),
+		Subtle = Color3.fromRGB(96, 130, 106),
+		Border = Color3.fromRGB(37, 57, 45),
+		BorderStrong = Color3.fromRGB(52, 82, 63),
+		Primary = Color3.fromRGB(52, 168, 83),
+		PrimaryHover = Color3.fromRGB(73, 194, 105),
+		PrimarySoft = Color3.fromRGB(21, 67, 39),
+		Success = Color3.fromRGB(52, 168, 83),
+		Warning = Color3.fromRGB(251, 188, 4),
+		Danger = Color3.fromRGB(234, 67, 53),
+		Input = Color3.fromRGB(14, 21, 17),
+		Hover = Color3.fromRGB(31, 48, 38),
+		Shadow = Color3.fromRGB(0, 0, 0)
 	}
 }
 Google.ActiveTheme = "Google"
@@ -757,7 +846,7 @@ function Google:CreateWindow(config)
 
 	local tabLayout = create("UIListLayout", {
 		SortOrder = Enum.SortOrder.LayoutOrder,
-		pad = UDim.new(0, 4),
+		Padding = UDim.new(0, 4),
 		Parent = tabList
 	})
 	self.TabLayout = tabLayout
@@ -897,7 +986,7 @@ function Window:CreateTab(config)
 	tab.Page = page
 	tab.Layout = create("UIListLayout", {
 		SortOrder = Enum.SortOrder.LayoutOrder,
-		pad = UDim.new(0, 10),
+		Padding = UDim.new(0, 10),
 		Parent = page
 	})
 	bind(tab.Connections, tab.Layout:GetPropertyChangedSignal("AbsoluteContentSize"), function()
@@ -1054,7 +1143,7 @@ function Tab:CreateSection(config)
 	section.Content = content
 	section.Layout = create("UIListLayout", {
 		SortOrder = Enum.SortOrder.LayoutOrder,
-		pad = UDim.new(0, 7),
+		Padding = UDim.new(0, 7),
 		Parent = content
 	})
 	bind(section.Connections, section.Layout:GetPropertyChangedSignal("AbsoluteContentSize"), function()
@@ -1110,7 +1199,7 @@ function Tab:GetStandaloneSection()
 	section.Content = content
 	section.Layout = create("UIListLayout", {
 		SortOrder = Enum.SortOrder.LayoutOrder,
-		pad = UDim.new(0, 7),
+		Padding = UDim.new(0, 7),
 		Parent = content
 	})
 	function section:Refresh(animated)
@@ -1792,7 +1881,7 @@ function Section:CreateDropdown(config)
 	})
 	self.OptionLayout = create("UIListLayout", {
 		SortOrder = Enum.SortOrder.LayoutOrder,
-		pad = UDim.new(0, 2),
+		Padding = UDim.new(0, 2),
 		Parent = self.OptionsFrame
 	})
 	function self:DisplayValue()
@@ -2603,7 +2692,7 @@ function Window:UpdateResponsiveLayout(force)
 		self.TabLayout.FillDirection = Enum.FillDirection.Horizontal
 		self.TabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 		self.TabLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-		self.TabLayout.pad = UDim.new(0, 6)
+		self.TabLayout.Padding = UDim.new(0, 6)
 		self.PageWrap.Size = UDim2.new(1, 0, 1, -(topHeight + navSize))
 		self.PageWrap.Position = UDim2.fromOffset(0, topHeight)
 	else
@@ -2617,7 +2706,7 @@ function Window:UpdateResponsiveLayout(force)
 		self.TabLayout.FillDirection = Enum.FillDirection.Vertical
 		self.TabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 		self.TabLayout.VerticalAlignment = Enum.VerticalAlignment.Top
-		self.TabLayout.pad = UDim.new(0, 4)
+		self.TabLayout.Padding = UDim.new(0, 4)
 		self.PageWrap.Size = UDim2.new(1, -navSize, 1, -topHeight)
 		self.PageWrap.Position = UDim2.fromOffset(navSize, topHeight)
 	end
@@ -4145,9 +4234,1177 @@ Google.Themes = {
 	Google = baseThemes.Google,
 	Red = baseThemes.Red,
 	Yellow = baseThemes.Yellow,
-	Green = baseThemes.Green
+	Green = baseThemes.Green,
+	DarkGoogle = baseThemes.DarkGoogle,
+	DarkRed = baseThemes.DarkRed,
+	DarkYellow = baseThemes.DarkYellow,
+	DarkGreen = baseThemes.DarkGreen
 }
 Google.ActiveTheme = Google.Themes[Google.ActiveTheme] and Google.ActiveTheme or "Google"
 Google.Theme = Google.Themes[Google.ActiveTheme]
+
+
+local gridMethods = {}
+gridMethods.__index = gridMethods
+setmetatable(gridMethods, {__index = ControlBase})
+
+local function wipe(container, keepLayouts)
+	for _, child in ipairs(container:GetChildren()) do
+		local keep = keepLayouts and (child:IsA("UILayout") or child:IsA("UIPadding"))
+		if not keep then
+			child:Destroy()
+		end
+	end
+end
+
+local function glyph(name, size, color, parent, position)
+	return Google.CreateIcon(name, size, color, parent, position or {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5)
+	})
+end
+
+local function shortText(label, value)
+	if label then
+		label.Text = tostring(value or "")
+	end
+end
+
+local function softCard(parent, height, title)
+	local frame = create("Frame", {
+		Name = title or "Card",
+		Size = UDim2.new(1, 0, 0, height),
+		BackgroundColor3 = Google.Theme.CardAlt,
+		BorderSizePixel = 0,
+		ClipsDescendants = true,
+		Parent = parent
+	})
+	round(frame, 12)
+	local stroke = outline(frame, Google.Theme.Border, 0.12, 1)
+	return frame, stroke
+end
+
+local function bindCardPress(card, target, callback)
+	if type(callback) ~= "function" then
+		return
+	end
+	target.Active = true
+	bind(card.Connections, target.InputBegan, function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			callback(card)
+		end
+	end)
+end
+
+local function paintLua(code)
+	local function esc(value)
+		return tostring(value or ""):gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;")
+	end
+	local words = {
+		"and", "break", "do", "else", "elseif", "end", "false", "for", "function", "if", "in", "local", "nil", "not", "or", "repeat", "return", "then", "true", "until", "while"
+	}
+	local lines = {}
+	local index = 1
+	for line in tostring(code or ""):gmatch("([^\n]*)\n?") do
+		if line == "" and index > #tostring(code or "") then
+			break
+		end
+		local clean = esc(line)
+		local trimmed = clean:match("^%s*(.*)$") or clean
+		if trimmed:sub(1, 2) == "--" then
+			clean = '<font color="#6A9955">' .. clean .. '</font>'
+		else
+			for _, word in ipairs(words) do
+				clean = clean:gsub("(%f[%a_])" .. word .. "(%f[^%a_])", '<font color="#C586C0">' .. word .. '</font>')
+			end
+		end
+		lines[#lines + 1] = '<font color="#858585">' .. tostring(#lines + 1) .. '</font>  ' .. clean
+		index += #line + 1
+	end
+	return table.concat(lines, "\n")
+end
+
+local function refreshGridSize(grid)
+	local rows = math.ceil(math.max(#grid.Items, 1) / grid.Columns)
+	local canvas = rows * grid.CellHeight + math.max(rows - 1, 0) * grid.Gap + 12
+	grid.Scroller.CanvasSize = UDim2.fromOffset(0, canvas)
+	if grid.AutoHeight then
+		local visibleRows = math.clamp(rows, 1, grid.MaxRows)
+		local height = visibleRows * grid.CellHeight + math.max(visibleRows - 1, 0) * grid.Gap + 14
+		grid.Instance.Size = UDim2.new(1, 0, 0, math.max(70, height))
+		grid.Scroller.Size = UDim2.new(1, 0, 1, 0)
+		grid:RefreshSection()
+	end
+end
+
+local function gridCellWidth(grid)
+	local gap = grid.Gap * math.max(grid.Columns - 1, 0)
+	return UDim2.new(1 / grid.Columns, -(gap / grid.Columns), 0, grid.CellHeight)
+end
+
+function gridMethods:RefreshSection()
+	return ControlBase.RefreshSection(self)
+end
+
+function gridMethods:Refresh()
+	self.Layout.CellSize = gridCellWidth(self)
+	self.Layout.CellPadding = UDim2.fromOffset(self.Gap, self.Gap)
+	refreshGridSize(self)
+	return self
+end
+
+function gridMethods:Clear()
+	for _, item in ipairs(self.Items) do
+		if item.Instance then
+			item.Instance:Destroy()
+		end
+	end
+	table.clear(self.Items)
+	self:Refresh()
+	return self
+end
+
+function gridMethods:SetColumns(value)
+	self.Columns = math.max(1, tonumber(value) or self.Columns)
+	return self:Refresh()
+end
+
+function gridMethods:SetGap(value)
+	self.Gap = math.max(0, tonumber(value) or self.Gap)
+	return self:Refresh()
+end
+
+function gridMethods:SetCellHeight(value)
+	self.CellHeight = math.max(44, tonumber(value) or self.CellHeight)
+	return self:Refresh()
+end
+
+function gridMethods:Destroy()
+	disconnectAll(self.Connections)
+	for _, item in ipairs(self.Items) do
+		if item.Destroy then
+			item:Destroy()
+		end
+	end
+	if self.Instance then
+		self.Instance:Destroy()
+	end
+	if self.Section then
+		self.Section:Refresh()
+	end
+end
+
+local function makeCard(parent, config, grid)
+	config = config or {}
+	local card = {
+		Connections = {},
+		ParentGrid = grid,
+		Title = config.Title or config.Name or "Card",
+		Subtitle = config.Subtitle or config.Description or "",
+		Badges = config.Badges or config.Tags or {}
+	}
+	local height = grid and grid.CellHeight or (config.Height or 86)
+	local frame, stroke = softCard(parent, height, "Card")
+	card.Instance = frame
+	card.Stroke = stroke
+	local press = create("TextButton", {
+		Name = "Hitbox",
+		Text = "",
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1,
+		AutoButtonColor = false,
+		Parent = frame
+	})
+	card.Hitbox = press
+	local x = 14
+	if config.Icon then
+		local iconWrap = create("Frame", {
+			Name = "IconWrap",
+			Size = UDim2.fromOffset(34, 34),
+			Position = UDim2.fromOffset(12, 14),
+			BackgroundColor3 = Google.Theme.PrimarySoft,
+			BorderSizePixel = 0,
+			Parent = frame
+		})
+		round(iconWrap, 10)
+		card.IconWrap = iconWrap
+		card.Icon = glyph(config.Icon, 18, Google.Theme.Primary, iconWrap)
+		x = 56
+	elseif config.Image then
+		local image = create("ImageLabel", {
+			Name = "Image",
+			Size = UDim2.fromOffset(36, 36),
+			Position = UDim2.fromOffset(12, 13),
+			BackgroundTransparency = 1,
+			Image = ResolveImageSource(config.Image),
+			ScaleType = Enum.ScaleType.Crop,
+			Parent = frame
+		})
+		round(image, 9)
+		card.Image = image
+		x = 58
+	end
+	local title = create("TextLabel", {
+		Name = "Title",
+		Text = card.Title,
+		Font = Enum.Font.GothamBold,
+		TextSize = 13,
+		TextColor3 = Google.Theme.Text,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextTruncate = Enum.TextTruncate.AtEnd,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, -(x + 14), 0, 18),
+		Position = UDim2.fromOffset(x, config.Subtitle and 14 or 22),
+		Parent = frame
+	})
+	card.TitleLabel = title
+	local subtitle = create("TextLabel", {
+		Name = "Subtitle",
+		Text = card.Subtitle,
+		Font = Enum.Font.Gotham,
+		TextSize = 12,
+		TextColor3 = Google.Theme.Muted,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextTruncate = Enum.TextTruncate.AtEnd,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, -(x + 14), 0, 18),
+		Position = UDim2.fromOffset(x, 34),
+		Visible = card.Subtitle ~= "",
+		Parent = frame
+	})
+	card.SubtitleLabel = subtitle
+	local badgeRow = create("Frame", {
+		Name = "Badges",
+		Size = UDim2.new(1, -(x + 14), 0, 18),
+		Position = UDim2.fromOffset(x, height - 25),
+		BackgroundTransparency = 1,
+		Visible = #card.Badges > 0,
+		Parent = frame
+	})
+	card.BadgeRow = badgeRow
+	local badgeLayout = create("UIListLayout", {
+		FillDirection = Enum.FillDirection.Horizontal,
+		Padding = UDim.new(0, 6),
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Parent = badgeRow
+	})
+	card.BadgeLayout = badgeLayout
+	function card:DrawBadges()
+		wipe(self.BadgeRow, true)
+		for _, badgeText in ipairs(self.Badges) do
+			local badge = create("TextLabel", {
+				Name = "Badge",
+				Text = tostring(badgeText),
+				Font = Enum.Font.GothamBold,
+				TextSize = 10,
+				TextColor3 = Google.Theme.Primary,
+				BackgroundColor3 = Google.Theme.PrimarySoft,
+				BorderSizePixel = 0,
+				Size = UDim2.fromOffset(math.clamp(#tostring(badgeText) * 6 + 16, 38, 100), 18),
+				Parent = self.BadgeRow
+			})
+			roundFull(badge)
+		end
+		self.BadgeRow.Visible = #self.Badges > 0
+	end
+	function card:SetTitle(value)
+		self.Title = tostring(value or "")
+		shortText(self.TitleLabel, self.Title)
+		return self
+	end
+	function card:SetSubtitle(value)
+		self.Subtitle = tostring(value or "")
+		shortText(self.SubtitleLabel, self.Subtitle)
+		self.SubtitleLabel.Visible = self.Subtitle ~= ""
+		return self
+	end
+	function card:SetBadges(values)
+		self.Badges = values or {}
+		self:DrawBadges()
+		return self
+	end
+	function card:ApplyTheme()
+		self.Instance.BackgroundColor3 = Google.Theme.CardAlt
+		self.Stroke.Color = Google.Theme.Border
+		self.TitleLabel.TextColor3 = Google.Theme.Text
+		self.SubtitleLabel.TextColor3 = Google.Theme.Muted
+		if self.IconWrap then self.IconWrap.BackgroundColor3 = Google.Theme.PrimarySoft end
+		if self.Icon then Google.SetIconColor(self.Icon, Google.Theme.Primary) end
+		self:DrawBadges()
+	end
+	function card:Destroy()
+		disconnectAll(self.Connections)
+		if self.Instance then self.Instance:Destroy() end
+		if self.ParentGrid then
+			for i, item in ipairs(self.ParentGrid.Items) do
+				if item == self then
+					table.remove(self.ParentGrid.Items, i)
+					break
+				end
+			end
+			self.ParentGrid:Refresh()
+		end
+	end
+	bindCardPress(card, press, config.Callback or config.OnClick)
+	card:DrawBadges()
+	if grid then
+		table.insert(grid.Items, card)
+		grid:Refresh()
+	end
+	return card
+end
+
+local function makeImageCard(parent, config, grid)
+	config = config or {}
+	local card = {
+		Connections = {},
+		ParentGrid = grid,
+		Title = config.Title or config.Name or "Image Card"
+	}
+	local height = grid and grid.CellHeight or (config.Height or 158)
+	local frame, stroke = softCard(parent, height, "ImageCard")
+	card.Instance = frame
+	card.Stroke = stroke
+	local hitbox = create("TextButton", {
+		Name = "Hitbox",
+		Text = "",
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1,
+		AutoButtonColor = false,
+		Parent = frame
+	})
+	card.Hitbox = hitbox
+	local titleHeight = config.HideTitle and 0 or 30
+	local image = create("ImageLabel", {
+		Name = "Image",
+		Size = UDim2.new(1, -14, 1, -(titleHeight + 14)),
+		Position = UDim2.fromOffset(7, 7),
+		BackgroundColor3 = Google.Theme.Input,
+		BorderSizePixel = 0,
+		Image = ResolveImageSource(config.Image or config.ImageId or config.Source or config.AssetId),
+		ScaleType = ResolveImageScaleType(config.ScaleType or "Crop"),
+		ClipsDescendants = true,
+		Parent = frame
+	})
+	round(image, 10)
+	card.Image = image
+	card.ImageStroke = outline(image, Google.Theme.Border, 0.18, 1)
+	local title = create("TextLabel", {
+		Name = "Title",
+		Text = card.Title,
+		Font = Enum.Font.GothamBold,
+		TextSize = 12,
+		TextColor3 = Google.Theme.Text,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextTruncate = Enum.TextTruncate.AtEnd,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, -16, 0, 20),
+		Position = UDim2.new(0, 8, 1, -25),
+		Visible = not config.HideTitle,
+		Parent = frame
+	})
+	card.TitleLabel = title
+	function card:SetTitle(value)
+		self.Title = tostring(value or "")
+		shortText(self.TitleLabel, self.Title)
+		return self
+	end
+	function card:SetImage(value)
+		local source = ResolveImageSource(value)
+		self.Image.Image = source
+		local thumb = ResolveImageThumbnail(value)
+		if thumb ~= "" then
+			task.delay(0.8, function()
+				if self.Image and self.Image.Parent and not self.Image.IsLoaded then
+					self.Image.Image = thumb
+				end
+			end)
+		end
+		return self
+	end
+	function card:ApplyTheme()
+		self.Instance.BackgroundColor3 = Google.Theme.CardAlt
+		self.Stroke.Color = Google.Theme.Border
+		self.Image.BackgroundColor3 = Google.Theme.Input
+		self.ImageStroke.Color = Google.Theme.Border
+		self.TitleLabel.TextColor3 = Google.Theme.Text
+	end
+	function card:Destroy()
+		disconnectAll(self.Connections)
+		if self.Instance then self.Instance:Destroy() end
+		if self.ParentGrid then
+			for i, item in ipairs(self.ParentGrid.Items) do
+				if item == self then
+					table.remove(self.ParentGrid.Items, i)
+					break
+				end
+			end
+			self.ParentGrid:Refresh()
+		end
+	end
+	bindCardPress(card, hitbox, config.Callback or config.OnClick)
+	card:SetImage(config.Image or config.ImageId or config.Source or config.AssetId or "")
+	if grid then
+		table.insert(grid.Items, card)
+		grid:Refresh()
+	end
+	return card
+end
+
+function Section:CreateGrid(config)
+	config = config or {}
+	local height = tonumber(config.Height) or tonumber(config.CellHeight) or 140
+	local grid = Control(self, height, "Grid")
+	setmetatable(grid, gridMethods)
+	grid.Columns = math.max(1, tonumber(config.Columns) or 3)
+	grid.Gap = math.max(0, tonumber(config.Gap or config.Spacing) or 10)
+	grid.CellHeight = math.max(44, tonumber(config.CellHeight) or 140)
+	grid.MaxRows = math.max(1, tonumber(config.MaxRows) or 3)
+	grid.AutoHeight = config.AutoHeight ~= false
+	grid.Items = {}
+	local scroller = create("ScrollingFrame", {
+		Name = "Scroller",
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		CanvasSize = UDim2.fromOffset(0, 0),
+		ScrollBarThickness = 3,
+		ScrollBarImageColor3 = Google.Theme.BorderStrong,
+		Parent = grid.Instance
+	})
+	grid.Scroller = scroller
+	pad(scroller, 2, 6, 2, 8)
+	local layout = create("UIGridLayout", {
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		CellSize = gridCellWidth(grid),
+		CellPadding = UDim2.fromOffset(grid.Gap, grid.Gap),
+		Parent = scroller
+	})
+	grid.Layout = layout
+	bind(grid.Connections, layout:GetPropertyChangedSignal("AbsoluteContentSize"), function()
+		refreshGridSize(grid)
+	end)
+	function grid:ApplyTheme()
+		self.Scroller.ScrollBarImageColor3 = Google.Theme.BorderStrong
+		for _, item in ipairs(self.Items) do
+			if item.ApplyTheme then item:ApplyTheme() end
+		end
+	end
+	grid:Refresh()
+	return grid
+end
+
+function Section:AddGrid(config)
+	return self:CreateGrid(config)
+end
+
+function gridMethods:CreateCard(config)
+	return makeCard(self.Scroller, config, self)
+end
+
+function gridMethods:AddCard(config)
+	return self:CreateCard(config)
+end
+
+function gridMethods:CreateImageCard(config)
+	return makeImageCard(self.Scroller, config, self)
+end
+
+function gridMethods:AddImageCard(config)
+	return self:CreateImageCard(config)
+end
+
+function Section:CreateCard(config)
+	config = config or {}
+	local control = Control(self, tonumber(config.Height) or 86, "CardControl")
+	local card = makeCard(control.Instance, config, nil)
+	control.Card = card
+	control.Instance.BackgroundTransparency = 1
+	function control:ApplyTheme()
+		if self.Card and self.Card.ApplyTheme then self.Card:ApplyTheme() end
+	end
+	function control:SetTitle(value) self.Card:SetTitle(value) return self end
+	function control:SetSubtitle(value) self.Card:SetSubtitle(value) return self end
+	function control:SetBadges(values) self.Card:SetBadges(values) return self end
+	return control
+end
+
+function Section:AddCard(config)
+	return self:CreateCard(config)
+end
+
+function Section:CreateImageCard(config)
+	config = config or {}
+	local control = Control(self, tonumber(config.Height) or 158, "ImageCardControl")
+	local card = makeImageCard(control.Instance, config, nil)
+	control.Card = card
+	control.Instance.BackgroundTransparency = 1
+	function control:ApplyTheme()
+		if self.Card and self.Card.ApplyTheme then self.Card:ApplyTheme() end
+	end
+	function control:SetTitle(value) self.Card:SetTitle(value) return self end
+	function control:SetImage(value) self.Card:SetImage(value) return self end
+	return control
+end
+
+function Section:AddImageCard(config)
+	return self:CreateImageCard(config)
+end
+
+function Section:CreateSearchBox(config)
+	config = config or {}
+	local control = Control(self, 42, "SearchBox")
+	control.Query = config.Default or ""
+	control.OnSearch = config.OnSearch or config.Callback or function() end
+	local frame, stroke = softCard(control.Instance, 40, "SearchBoxFrame")
+	frame.Size = UDim2.new(1, 0, 0, 40)
+	control.BoxFrame = frame
+	control.Stroke = stroke
+	control.Icon = glyph(config.Icon or "search", 17, Google.Theme.Muted, frame, {
+		Size = UDim2.fromOffset(17, 17),
+		Position = UDim2.fromOffset(13, 12)
+	})
+	local input = create("TextBox", {
+		Name = "Input",
+		Text = control.Query,
+		PlaceholderText = config.Placeholder or "Search...",
+		Font = Enum.Font.Gotham,
+		TextSize = 13,
+		TextColor3 = Google.Theme.Text,
+		PlaceholderColor3 = Google.Theme.Subtle,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		ClearTextOnFocus = false,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, -74, 1, 0),
+		Position = UDim2.fromOffset(38, 0),
+		Parent = frame
+	})
+	control.Input = input
+	local clear = create("TextButton", {
+		Name = "Clear",
+		Text = "",
+		Size = UDim2.fromOffset(28, 28),
+		Position = UDim2.new(1, -34, 0.5, -14),
+		BackgroundColor3 = Google.Theme.Hover,
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		AutoButtonColor = false,
+		Visible = control.Query ~= "",
+		Parent = frame
+	})
+	round(clear, 8)
+	control.ClearButton = clear
+	control.ClearIcon = glyph("x", 13, Google.Theme.Muted, clear)
+	function control:Search()
+		self.Query = self.Input.Text
+		self.OnSearch(self.Query)
+		return self
+	end
+	function control:Set(value, silent)
+		self.Query = tostring(value or "")
+		self.Input.Text = self.Query
+		self.ClearButton.Visible = self.Query ~= ""
+		if not silent then self:Search() end
+		return self
+	end
+	function control:Get()
+		return self.Input.Text
+	end
+	function control:ApplyTheme()
+		self.BoxFrame.BackgroundColor3 = Google.Theme.CardAlt
+		self.Stroke.Color = Google.Theme.Border
+		self.Input.TextColor3 = Google.Theme.Text
+		self.Input.PlaceholderColor3 = Google.Theme.Subtle
+		self.ClearButton.BackgroundColor3 = Google.Theme.Hover
+		Google.SetIconColor(self.Icon, Google.Theme.Muted)
+		Google.SetIconColor(self.ClearIcon, Google.Theme.Muted)
+	end
+	bind(control.Connections, input:GetPropertyChangedSignal("Text"), function()
+		control.Query = input.Text
+		clear.Visible = input.Text ~= ""
+	end)
+	bind(control.Connections, input.FocusLost, function(enterPressed)
+		if enterPressed then control:Search() end
+	end)
+	bind(control.Connections, clear.MouseButton1Click, function()
+		control:Set("", true)
+		input:CaptureFocus()
+	end)
+	return control
+end
+
+function Section:AddSearchBox(config)
+	return self:CreateSearchBox(config)
+end
+
+function Section:CreateFilterBar(config)
+	config = config or {}
+	local filters = config.Filters or {}
+	local control = Control(self, tonumber(config.Height) or 42, "FilterBar")
+	control.Values = {}
+	control.Chips = {}
+	control.ChipStrokes = {}
+	control.Callback = config.Callback or function() end
+	local scroller = create("ScrollingFrame", {
+		Name = "Scroller",
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		CanvasSize = UDim2.fromOffset(0, 0),
+		ScrollingDirection = Enum.ScrollingDirection.X,
+		ScrollBarThickness = 0,
+		Parent = control.Instance
+	})
+	control.Scroller = scroller
+	local layout = create("UIListLayout", {
+		FillDirection = Enum.FillDirection.Horizontal,
+		Padding = UDim.new(0, tonumber(config.Gap) or 8),
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Parent = scroller
+	})
+	control.Layout = layout
+	local function styleChip(chip, active)
+		chip.BackgroundColor3 = active and Google.Theme.PrimarySoft or Google.Theme.CardAlt
+		chip.TextColor3 = active and Google.Theme.Primary or Google.Theme.Muted
+		local stroke = control.ChipStrokes[chip.Name]
+		if stroke then
+			stroke.Color = active and Google.Theme.Primary or Google.Theme.Border
+			stroke.Transparency = active and 0.18 or 0.08
+		end
+	end
+	local function updateCanvas()
+		scroller.CanvasSize = UDim2.fromOffset(layout.AbsoluteContentSize.X + 6, 0)
+	end
+	function control:Get()
+		return self.Values
+	end
+	function control:Set(name, value, silent)
+		self.Values[name] = value and true or false
+		local chip = self.Chips[name]
+		if chip then styleChip(chip, self.Values[name]) end
+		if not silent then self.Callback(self.Values) end
+		return self
+	end
+	function control:ApplyTheme()
+		for name, chip in pairs(self.Chips) do
+			styleChip(chip, self.Values[name])
+		end
+	end
+	for _, item in ipairs(filters) do
+		local name = item.Name or item[1]
+		local active = item.Default == true or item.Value == true
+		control.Values[name] = active
+		local chip = create("TextButton", {
+			Name = tostring(name),
+			Text = tostring(name),
+			Font = Enum.Font.GothamBold,
+			TextSize = 12,
+			AutoButtonColor = false,
+			BorderSizePixel = 0,
+			Size = UDim2.fromOffset(math.clamp(#tostring(name) * 7 + 26, 58, 160), 30),
+			Parent = scroller
+		})
+		roundFull(chip)
+		control.ChipStrokes[name] = outline(chip, Google.Theme.Border, 0.08, 1)
+		control.Chips[name] = chip
+		styleChip(chip, active)
+		bind(control.Connections, chip.MouseButton1Click, function()
+			control:Set(name, not control.Values[name])
+		end)
+	end
+	bind(control.Connections, layout:GetPropertyChangedSignal("AbsoluteContentSize"), updateCanvas)
+	updateCanvas()
+	return control
+end
+
+function Section:AddFilterBar(config)
+	return self:CreateFilterBar(config)
+end
+
+function Section:CreateKeyValueList(config)
+	config = config or {}
+	local items = config.Items or {}
+	local rowHeight = tonumber(config.RowHeight) or 30
+	local control = Control(self, math.max(rowHeight, #items * rowHeight), "KeyValueList")
+	control.Items = items
+	control.RowHeight = rowHeight
+	local holder = create("Frame", {
+		Name = "Rows",
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1,
+		Parent = control.Instance
+	})
+	control.Holder = holder
+	local layout = create("UIListLayout", {
+		Padding = UDim.new(0, 6),
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Parent = holder
+	})
+	control.Layout = layout
+	function control:Draw()
+		wipe(self.Holder, true)
+		for _, row in ipairs(self.Items) do
+			local key = row.Key or row.Name or row[1]
+			local value = row.Value or row.Text or row[2]
+			local line, stroke = softCard(self.Holder, self.RowHeight, "Row")
+			line.BackgroundTransparency = 0
+			stroke.Transparency = 0.18
+			create("TextLabel", {
+				Name = "Key",
+				Text = tostring(key or ""),
+				Font = Enum.Font.Gotham,
+				TextSize = 12,
+				TextColor3 = Google.Theme.Muted,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				TextTruncate = Enum.TextTruncate.AtEnd,
+				BackgroundTransparency = 1,
+				Size = UDim2.new(0.45, -12, 1, 0),
+				Position = UDim2.fromOffset(12, 0),
+				Parent = line
+			})
+			create("TextLabel", {
+				Name = "Value",
+				Text = tostring(value or ""),
+				Font = Enum.Font.GothamBold,
+				TextSize = 12,
+				TextColor3 = Google.Theme.Text,
+				TextXAlignment = Enum.TextXAlignment.Right,
+				TextTruncate = Enum.TextTruncate.AtEnd,
+				BackgroundTransparency = 1,
+				Size = UDim2.new(0.55, -12, 1, 0),
+				Position = UDim2.new(0.45, 0, 0, 0),
+				Parent = line
+			})
+		end
+		local total = #self.Items * self.RowHeight + math.max(#self.Items - 1, 0) * 6
+		self.Instance.Size = UDim2.new(1, 0, 0, math.max(self.RowHeight, total))
+		self:RefreshSection()
+	end
+	function control:SetItems(values)
+		self.Items = values or {}
+		self:Draw()
+		return self
+	end
+	function control:ApplyTheme()
+		self:Draw()
+	end
+	control:Draw()
+	return control
+end
+
+function Section:AddKeyValueList(config)
+	return self:CreateKeyValueList(config)
+end
+
+function Section:CreateCodeBlock(config)
+	config = config or {}
+	local maxHeight = tonumber(config.MaxHeight or config.Height) or 180
+	local control = Control(self, maxHeight, "CodeBlock")
+	control.Code = config.Code or config.Text or ""
+	control.Language = string.lower(tostring(config.Language or "text"))
+	control.Wrap = config.Wrap ~= false and config.LineWrap ~= false
+	local frame, stroke = softCard(control.Instance, maxHeight, "CodeFrame")
+	control.Frame = frame
+	control.Stroke = stroke
+	local header = create("Frame", {
+		Name = "Header",
+		Size = UDim2.new(1, 0, 0, 30),
+		BackgroundColor3 = Google.Theme.Card,
+		BorderSizePixel = 0,
+		Parent = frame
+	})
+	control.Header = header
+	create("TextLabel", {
+		Name = "Language",
+		Text = string.upper(control.Language),
+		Font = Enum.Font.GothamBold,
+		TextSize = 11,
+		TextColor3 = Google.Theme.Muted,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, -100, 1, 0),
+		Position = UDim2.fromOffset(12, 0),
+		Parent = header
+	})
+	if config.CopyButton then
+		local copy = create("TextButton", {
+			Name = "Copy",
+			Text = "Copy",
+			Font = Enum.Font.GothamBold,
+			TextSize = 11,
+			TextColor3 = Google.Theme.Primary,
+			BackgroundColor3 = Google.Theme.PrimarySoft,
+			BorderSizePixel = 0,
+			AutoButtonColor = false,
+			Size = UDim2.fromOffset(58, 22),
+			Position = UDim2.new(1, -68, 0, 4),
+			Parent = header
+		})
+		round(copy, 7)
+		control.CopyButton = copy
+		bind(control.Connections, copy.MouseButton1Click, function()
+			if type(setclipboard) == "function" then
+				setclipboard(control.Code)
+			end
+		end)
+	end
+	local scroller = create("ScrollingFrame", {
+		Name = "Scroller",
+		Size = UDim2.new(1, -12, 1, -36),
+		Position = UDim2.fromOffset(6, 32),
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		CanvasSize = UDim2.fromOffset(0, 0),
+		ScrollBarThickness = 3,
+		ScrollBarImageColor3 = Google.Theme.BorderStrong,
+		Parent = frame
+	})
+	control.Scroller = scroller
+	local label = create("TextLabel", {
+		Name = "Code",
+		Text = (control.Language == "lua" or control.Language == "luau") and paintLua(control.Code) or tostring(control.Code),
+		RichText = control.Language == "lua" or control.Language == "luau",
+		Font = Enum.Font.Code,
+		TextSize = 13,
+		TextColor3 = Google.Theme.Text,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextYAlignment = Enum.TextYAlignment.Top,
+		TextWrapped = control.Wrap,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, -8, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		Parent = scroller
+	})
+	control.Label = label
+	function control:RefreshCanvas()
+		self.Scroller.CanvasSize = UDim2.fromOffset(0, self.Label.AbsoluteSize.Y + 12)
+	end
+	function control:SetCode(value)
+		self.Code = tostring(value or "")
+		self.Label.Text = (self.Language == "lua" or self.Language == "luau") and paintLua(self.Code) or self.Code
+		task.defer(function() self:RefreshCanvas() end)
+		return self
+	end
+	function control:Get()
+		return self.Code
+	end
+	function control:ApplyTheme()
+		self.Frame.BackgroundColor3 = Google.Theme.CardAlt
+		self.Header.BackgroundColor3 = Google.Theme.Card
+		self.Stroke.Color = Google.Theme.Border
+		self.Label.TextColor3 = Google.Theme.Text
+		self.Scroller.ScrollBarImageColor3 = Google.Theme.BorderStrong
+		if self.CopyButton then
+			self.CopyButton.BackgroundColor3 = Google.Theme.PrimarySoft
+			self.CopyButton.TextColor3 = Google.Theme.Primary
+		end
+	end
+	bind(control.Connections, label:GetPropertyChangedSignal("AbsoluteSize"), function()
+		control:RefreshCanvas()
+	end)
+	control:SetCode(control.Code)
+	return control
+end
+
+function Section:AddCodeBlock(config)
+	return self:CreateCodeBlock(config)
+end
+
+function Section:CreateEmptyState(config)
+	config = config or {}
+	local height = tonumber(config.Height) or 148
+	local control = Control(self, height, "EmptyState")
+	local frame, stroke = softCard(control.Instance, height, "EmptyStateFrame")
+	control.Frame = frame
+	control.Stroke = stroke
+	local iconWrap = create("Frame", {
+		Name = "IconWrap",
+		Size = UDim2.fromOffset(38, 38),
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, 18),
+		BackgroundColor3 = Google.Theme.PrimarySoft,
+		BorderSizePixel = 0,
+		Parent = frame
+	})
+	round(iconWrap, 12)
+	control.IconWrap = iconWrap
+	control.Icon = glyph(config.Icon or "search", 20, Google.Theme.Primary, iconWrap)
+	control.TitleLabel = create("TextLabel", {
+		Name = "Title",
+		Text = config.Title or "Nothing here",
+		Font = Enum.Font.GothamBold,
+		TextSize = 14,
+		TextColor3 = Google.Theme.Text,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, -24, 0, 22),
+		Position = UDim2.fromOffset(12, 62),
+		Parent = frame
+	})
+	control.TextLabel = create("TextLabel", {
+		Name = "Text",
+		Text = config.Text or config.Description or "",
+		Font = Enum.Font.Gotham,
+		TextSize = 12,
+		TextColor3 = Google.Theme.Muted,
+		TextWrapped = true,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, -34, 0, 34),
+		Position = UDim2.fromOffset(17, 86),
+		Parent = frame
+	})
+	if config.ActionText then
+		local action = create("TextButton", {
+			Name = "Action",
+			Text = config.ActionText,
+			Font = Enum.Font.GothamBold,
+			TextSize = 12,
+			TextColor3 = Color3.new(1, 1, 1),
+			BackgroundColor3 = Google.Theme.Primary,
+			BorderSizePixel = 0,
+			AutoButtonColor = false,
+			Size = UDim2.fromOffset(112, 28),
+			AnchorPoint = Vector2.new(0.5, 1),
+			Position = UDim2.new(0.5, 0, 1, -12),
+			Parent = frame
+		})
+		round(action, 8)
+		control.ActionButton = action
+		bind(control.Connections, action.MouseButton1Click, function()
+			if type(config.Callback) == "function" then config.Callback() end
+		end)
+	end
+	function control:ApplyTheme()
+		self.Frame.BackgroundColor3 = Google.Theme.CardAlt
+		self.Stroke.Color = Google.Theme.Border
+		self.IconWrap.BackgroundColor3 = Google.Theme.PrimarySoft
+		Google.SetIconColor(self.Icon, Google.Theme.Primary)
+		self.TitleLabel.TextColor3 = Google.Theme.Text
+		self.TextLabel.TextColor3 = Google.Theme.Muted
+		if self.ActionButton then self.ActionButton.BackgroundColor3 = Google.Theme.Primary end
+	end
+	return control
+end
+
+function Section:AddEmptyState(config)
+	return self:CreateEmptyState(config)
+end
+
+function Section:CreateLoading(config)
+	config = config or {}
+	local control = Control(self, tonumber(config.Height) or 42, "Loading")
+	control.Running = true
+	local frame, stroke = softCard(control.Instance, 40, "LoadingFrame")
+	control.Frame = frame
+	control.Stroke = stroke
+	local dot = create("TextLabel", {
+		Name = "Spinner",
+		Text = "•",
+		Font = Enum.Font.GothamBold,
+		TextSize = 26,
+		TextColor3 = Google.Theme.Primary,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		BackgroundTransparency = 1,
+		Size = UDim2.fromOffset(34, 40),
+		Position = UDim2.fromOffset(8, -2),
+		Parent = frame
+	})
+	control.Spinner = dot
+	control.TextLabel = create("TextLabel", {
+		Name = "Text",
+		Text = config.Text or "Loading...",
+		Font = Enum.Font.GothamBold,
+		TextSize = 13,
+		TextColor3 = Google.Theme.Text,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, -58, 1, 0),
+		Position = UDim2.fromOffset(46, 0),
+		Parent = frame
+	})
+	function control:SetText(value)
+		shortText(self.TextLabel, value)
+		return self
+	end
+	function control:Hide()
+		self.Instance.Visible = false
+		return self
+	end
+	function control:Show()
+		self.Instance.Visible = true
+		return self
+	end
+	function control:ApplyTheme()
+		self.Frame.BackgroundColor3 = Google.Theme.CardAlt
+		self.Stroke.Color = Google.Theme.Border
+		self.TextLabel.TextColor3 = Google.Theme.Text
+		self.Spinner.TextColor3 = Google.Theme.Primary
+	end
+	local marks = {"•", "••", "•••", "••"}
+	task.spawn(function()
+		local i = 1
+		while control.Running and control.Instance and control.Instance.Parent do
+			control.Spinner.Text = marks[i]
+			i = (i % #marks) + 1
+			task.wait(0.28)
+		end
+	end)
+	local destroy = control.Destroy
+	function control:Destroy()
+		self.Running = false
+		destroy(self)
+	end
+	return control
+end
+
+function Section:AddLoading(config)
+	return self:CreateLoading(config)
+end
+
+function Section:CreateTable(config)
+	config = config or {}
+	local columns = config.Columns or {}
+	local rows = config.Rows or {}
+	local rowHeight = tonumber(config.RowHeight) or 32
+	local height = tonumber(config.Height) or math.clamp((#rows + 1) * rowHeight + 8, 72, tonumber(config.MaxHeight) or 220)
+	local control = Control(self, height, "Table")
+	control.Columns = columns
+	control.Rows = rows
+	control.RowHeight = rowHeight
+	control.OnRowClick = config.OnRowClick or config.Callback
+	local frame, stroke = softCard(control.Instance, height, "TableFrame")
+	control.Frame = frame
+	control.Stroke = stroke
+	local header = create("Frame", {
+		Name = "Header",
+		Size = UDim2.new(1, -8, 0, rowHeight),
+		Position = UDim2.fromOffset(4, 4),
+		BackgroundColor3 = Google.Theme.Card,
+		BorderSizePixel = 0,
+		Parent = frame
+	})
+	round(header, 8)
+	control.Header = header
+	local body = create("ScrollingFrame", {
+		Name = "Body",
+		Size = UDim2.new(1, -8, 1, -(rowHeight + 12)),
+		Position = UDim2.fromOffset(4, rowHeight + 8),
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		CanvasSize = UDim2.fromOffset(0, 0),
+		ScrollBarThickness = 3,
+		ScrollBarImageColor3 = Google.Theme.BorderStrong,
+		Parent = frame
+	})
+	control.Body = body
+	local bodyLayout = create("UIListLayout", {
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Padding = UDim.new(0, 4),
+		Parent = body
+	})
+	control.BodyLayout = bodyLayout
+	local function cell(parent, text, index, count, bold)
+		return create("TextLabel", {
+			Name = "Cell" .. tostring(index),
+			Text = tostring(text or ""),
+			Font = bold and Enum.Font.GothamBold or Enum.Font.Gotham,
+			TextSize = 12,
+			TextColor3 = bold and Google.Theme.Text or Google.Theme.Muted,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			TextTruncate = Enum.TextTruncate.AtEnd,
+			BackgroundTransparency = 1,
+			Size = UDim2.new(1 / math.max(count, 1), -8, 1, 0),
+			Position = UDim2.new((index - 1) / math.max(count, 1), 8, 0, 0),
+			Parent = parent
+		})
+	end
+	function control:Draw()
+		for _, child in ipairs(self.Header:GetChildren()) do
+			if not child:IsA("UICorner") and not child:IsA("UIStroke") and not child:IsA("UIGradient") then
+				child:Destroy()
+			end
+		end
+		wipe(self.Body, true)
+		local count = math.max(#self.Columns, 1)
+		for i, name in ipairs(self.Columns) do
+			cell(self.Header, name, i, count, true)
+		end
+		for rowIndex, row in ipairs(self.Rows) do
+			local line = create("TextButton", {
+				Name = "Row" .. tostring(rowIndex),
+				Text = "",
+				AutoButtonColor = false,
+				Size = UDim2.new(1, -2, 0, self.RowHeight),
+				BackgroundColor3 = Google.Theme.CardAlt,
+				BorderSizePixel = 0,
+				Parent = self.Body
+			})
+			round(line, 8)
+			outline(line, Google.Theme.Border, 0.18, 1)
+			for i = 1, count do
+				cell(line, row[i], i, count, false)
+			end
+			if type(self.OnRowClick) == "function" then
+				bind(self.Connections, line.MouseButton1Click, function()
+					self.OnRowClick(row, rowIndex)
+				end)
+			end
+		end
+		self.Body.CanvasSize = UDim2.fromOffset(0, (#self.Rows * (self.RowHeight + 4)) + 8)
+	end
+	function control:SetRows(values)
+		self.Rows = values or {}
+		self:Draw()
+		return self
+	end
+	function control:AddRow(value)
+		table.insert(self.Rows, value)
+		self:Draw()
+		return self
+	end
+	function control:Clear()
+		table.clear(self.Rows)
+		self:Draw()
+		return self
+	end
+	function control:ApplyTheme()
+		self.Frame.BackgroundColor3 = Google.Theme.CardAlt
+		self.Stroke.Color = Google.Theme.Border
+		self.Header.BackgroundColor3 = Google.Theme.Card
+		self.Body.ScrollBarImageColor3 = Google.Theme.BorderStrong
+		self:Draw()
+	end
+	bind(control.Connections, bodyLayout:GetPropertyChangedSignal("AbsoluteContentSize"), function()
+		control.Body.CanvasSize = UDim2.fromOffset(0, control.BodyLayout.AbsoluteContentSize.Y + 8)
+	end)
+	control:Draw()
+	return control
+end
+
+function Section:AddTable(config)
+	return self:CreateTable(config)
+end
+
+function Tab:CreateGrid(config) return self:GetStandaloneSection():CreateGrid(config) end
+function Tab:AddGrid(config) return self:CreateGrid(config) end
+function Tab:CreateCard(config) return self:GetStandaloneSection():CreateCard(config) end
+function Tab:AddCard(config) return self:CreateCard(config) end
+function Tab:CreateImageCard(config) return self:GetStandaloneSection():CreateImageCard(config) end
+function Tab:AddImageCard(config) return self:CreateImageCard(config) end
+function Tab:CreateSearchBox(config) return self:GetStandaloneSection():CreateSearchBox(config) end
+function Tab:AddSearchBox(config) return self:CreateSearchBox(config) end
+function Tab:CreateFilterBar(config) return self:GetStandaloneSection():CreateFilterBar(config) end
+function Tab:AddFilterBar(config) return self:CreateFilterBar(config) end
+function Tab:CreateKeyValueList(config) return self:GetStandaloneSection():CreateKeyValueList(config) end
+function Tab:AddKeyValueList(config) return self:CreateKeyValueList(config) end
+function Tab:CreateCodeBlock(config) return self:GetStandaloneSection():CreateCodeBlock(config) end
+function Tab:AddCodeBlock(config) return self:CreateCodeBlock(config) end
+function Tab:CreateEmptyState(config) return self:GetStandaloneSection():CreateEmptyState(config) end
+function Tab:AddEmptyState(config) return self:CreateEmptyState(config) end
+function Tab:CreateLoading(config) return self:GetStandaloneSection():CreateLoading(config) end
+function Tab:AddLoading(config) return self:CreateLoading(config) end
+function Tab:CreateTable(config) return self:GetStandaloneSection():CreateTable(config) end
+function Tab:AddTable(config) return self:CreateTable(config) end
 
 return Google
