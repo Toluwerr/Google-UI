@@ -92,17 +92,14 @@ local function roundFull(parent)
 end
 
 local function outline(parent, color, transparency, thickness)
-	local rawThickness = tonumber(thickness)
-	local finalThickness = rawThickness or 0.75
-	if finalThickness > 0 and finalThickness <= 1 then
-		finalThickness = 0.75
-	end
-
 	local finalTransparency = transparency
 	if finalTransparency == nil then
-		finalTransparency = 0.46
-	elseif finalThickness > 0 and finalTransparency < 0.42 then
-		finalTransparency = 0.42
+		finalTransparency = 0.78
+	end
+
+	local finalThickness = tonumber(thickness) or 1
+	if finalThickness > 0 then
+		finalThickness = 1
 	end
 
 	local stroke = create("UIStroke", {
@@ -125,6 +122,22 @@ local function pad(parent, left, right, top, bottom)
 		Parent = parent
 	})
 	return padding
+end
+
+local function surface(parent, topColor, bottomColor)
+	local gradient = parent:FindFirstChild("SurfaceShade")
+	if not gradient then
+		gradient = create("UIGradient", {
+			Name = "SurfaceShade",
+			Rotation = 90,
+			Parent = parent
+		})
+	end
+	gradient.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, topColor),
+		ColorSequenceKeypoint.new(1, bottomColor)
+	})
+	return gradient
 end
 
 local motion = {
@@ -717,6 +730,7 @@ function Google:CreateWindow(config)
 		Size = UDim2.new(1, 0, 0, 1),
 		Position = UDim2.new(0, 0, 1, -1),
 		BackgroundColor3 = Google.Theme.Border,
+		BackgroundTransparency = 0.45,
 		BorderSizePixel = 0,
 		Parent = topbar
 	})
@@ -853,6 +867,7 @@ function Google:CreateWindow(config)
 		Size = UDim2.new(0, 1, 1, 0),
 		Position = UDim2.new(1, -1, 0, 0),
 		BackgroundColor3 = Google.Theme.Border,
+		BackgroundTransparency = 0.45,
 		BorderSizePixel = 0,
 		Parent = sidebar
 	})
@@ -1104,17 +1119,19 @@ function Tab:CreateSection(config)
 	section.Connections = {}
 	section.Collapsed = config.Collapsed or false
 
-	local frame = create("Frame", {
+	local frame = create("CanvasGroup", {
 		Name = section.Name,
 		Size = UDim2.new(1, 0, 0, 56),
 		BackgroundColor3 = Google.Theme.Card,
 		BorderSizePixel = 0,
-		ClipsDescendants = false,
+		ClipsDescendants = true,
+		GroupTransparency = 0,
 		Parent = self.Page
 	})
-	round(frame, 10)
+	round(frame, 12)
+	surface(frame, Google.Theme.Card, Google.Theme.CardAlt)
 	section.Instance = frame
-	section.outline = outline(frame, Google.Theme.Border, 0.52, 0.75)
+	section.outline = outline(frame, Google.Theme.Border, 1, 0)
 
 	local header = create("TextButton", {
 		Name = "Header",
@@ -1206,7 +1223,8 @@ function Tab:GetStandaloneSection()
 		Size = UDim2.new(1, 0, 0, 0),
 		BackgroundColor3 = Google.Theme.Card,
 		BorderSizePixel = 0,
-		ClipsDescendants = false,
+		ClipsDescendants = true,
+		GroupTransparency = 0,
 		LayoutOrder = -1000,
 		Parent = self.Page
 	})
@@ -1429,9 +1447,10 @@ end
 
 function Section:ApplyTheme()
 	self.Instance.BackgroundColor3 = Google.Theme.Card
+	surface(self.Instance, Google.Theme.Card, Google.Theme.CardAlt)
 	self.outline.Color = Google.Theme.Border
-	self.outline.Transparency = 0.52
-	self.outline.Thickness = 0.75
+	self.outline.Transparency = 1
+	self.outline.Thickness = 0
 	self.TitleLabel.TextColor3 = Google.Theme.Text
 	self.DescriptionLabel.TextColor3 = Google.Theme.Muted
 	Google.SetIconColor(self.Arrow, Google.Theme.Muted)
@@ -1837,7 +1856,7 @@ function Section:CreateDropdown(config)
 		Parent = self.Instance
 	})
 	round(self.Main, 8)
-	self.MainStroke = outline(self.Main, Google.Theme.Border, 0.52, 0.75)
+	self.MainStroke = outline(self.Main, Google.Theme.Border, 0.86, 1)
 	self.Label = create("TextLabel", {
 		Text = config.Name or "Dropdown",
 		Font = Enum.Font.GothamMedium,
@@ -1876,7 +1895,7 @@ function Section:CreateDropdown(config)
 		Parent = self.Instance
 	})
 	round(self.Menu, 8)
-	self.MenuStroke = outline(self.Menu, Google.Theme.Border, 0.52, 0.75)
+	self.MenuStroke = outline(self.Menu, Google.Theme.Border, 0.86, 1)
 	local searchOffset = 0
 	if self.Searchable then
 		self.SearchBox = create("TextBox", {
@@ -1894,7 +1913,7 @@ function Section:CreateDropdown(config)
 			Parent = self.Menu
 		})
 		round(self.SearchBox, 8)
-		self.SearchStroke = outline(self.SearchBox, Google.Theme.Border, 0.08, 1)
+		self.SearchStroke = outline(self.SearchBox, Google.Theme.Border, 0.82, 1)
 		pad(self.SearchBox, 8, 8, 0, 0)
 		searchOffset = 36
 	end
@@ -2118,7 +2137,7 @@ function Section:CreateTextbox(config)
 	})
 	round(self.Entry, 8)
 	pad(self.Entry, 10, 10, 0, 0)
-	self.EntryStroke = outline(self.Entry, Google.Theme.Border, 0.52, 0.75)
+	self.EntryStroke = outline(self.Entry, Google.Theme.Border, 0.86, 1)
 	function self:Set(value)
 		if self.Numeric then
 			local numberValue = tonumber(value)
@@ -2192,7 +2211,7 @@ function Section:CreateKeybind(config)
 		Parent = self.Instance
 	})
 	round(self.Button, 8)
-	self.ButtonStroke = outline(self.Button, Google.Theme.Border, 0.08, 1)
+	self.ButtonStroke = outline(self.Button, Google.Theme.Border, 0.84, 1)
 	function self:Set(keycode)
 		self.Value = keycode
 		self.Button.Text = keycode.Name
@@ -2296,7 +2315,7 @@ function Section:CreateColorPicker(config)
 		Parent = self.Instance
 	})
 	round(self.Button, 8)
-	self.ButtonStroke = outline(self.Button, Google.Theme.Border, 0.08, 1)
+	self.ButtonStroke = outline(self.Button, Google.Theme.Border, 0.84, 1)
 	self.Palette = create("Frame", {
 		Size = UDim2.new(1, 0, 0, 0),
 		Position = UDim2.fromOffset(0, 42),
@@ -2332,7 +2351,7 @@ function Section:CreateColorPicker(config)
 			Parent = self.Palette
 		})
 		round(swatch, 8)
-		outline(swatch, Google.Theme.Border, 0.12, 1)
+		outline(swatch, Google.Theme.Border, 0.82, 1)
 		bind(self.Connections, swatch.MouseButton1Click, function()
 			self:Set(color)
 		end)
@@ -2410,7 +2429,7 @@ function Section:CreateParagraph(config)
 	self.Instance.BackgroundTransparency = 0
 	self.Instance.BackgroundColor3 = Google.Theme.CardAlt
 	round(self.Instance, 8)
-	self.outline = outline(self.Instance, Google.Theme.Border, 0.1, 1)
+	self.outline = outline(self.Instance, Google.Theme.Border, 1, 0)
 	if title then
 		self.TitleLabel = create("TextLabel", {
 			Text = title,
@@ -2474,7 +2493,7 @@ function Section:CreateImage(config)
 	self.Instance.BackgroundColor3 = Google.Theme.CardAlt
 	self.Instance.ClipsDescendants = false
 	round(self.Instance, 10)
-	self.outline = outline(self.Instance, Google.Theme.Border, 0.55, 0.75)
+	self.outline = outline(self.Instance, Google.Theme.Border, 1, 0)
 	if title then
 		self.TitleLabel = create("TextLabel", {
 			Text = title,
@@ -2510,7 +2529,7 @@ function Section:CreateImage(config)
 		Parent = self.Instance
 	})
 	round(self.ImageFrame, tonumber(config.ImageCornerRadius) or tonumber(config.CornerRadius) or 8)
-	self.ImageStroke = outline(self.ImageFrame, Google.Theme.Border, 0.52, 0.75)
+	self.ImageStroke = outline(self.ImageFrame, Google.Theme.Border, 0.86, 1)
 	local initialSource = config.Image or config.ImageId or config.Source or config.AssetId or config.Id
 	self.ImageFallback = imageThumbnail(initialSource)
 	self.Image = create("ImageLabel", {
@@ -2566,8 +2585,8 @@ function Section:CreateImage(config)
 		self.outline.Color = Google.Theme.Border
 		self.ImageFrame.BackgroundColor3 = config.BackgroundColor or Google.Theme.Input
 		self.ImageStroke.Color = Google.Theme.Border
-		self.ImageStroke.Transparency = 0.54
-		self.ImageStroke.Thickness = 0.75
+		self.ImageStroke.Transparency = 0.86
+		self.ImageStroke.Thickness = 1
 		if self.TitleLabel then
 			self.TitleLabel.TextColor3 = Google.Theme.Text
 		end
@@ -2763,8 +2782,10 @@ function Window:ApplyTheme()
 	self.MainStroke.Thickness = 0
 	self.Topbar.BackgroundColor3 = theme.Topbar
 	self.TopbarLine.BackgroundColor3 = theme.Border
+	self.TopbarLine.BackgroundTransparency = 0.45
 	self.Sidebar.BackgroundColor3 = theme.Sidebar
 	self.SidebarLine.BackgroundColor3 = theme.Border
+	self.SidebarLine.BackgroundTransparency = 0.45
 	self.PageWrap.BackgroundColor3 = theme.Page
 	self.TitleIconWrap.BackgroundColor3 = theme.PrimarySoft
 	Google.SetIconColor(self.TitleIcon, theme.Primary)
@@ -3014,7 +3035,7 @@ function Google:Confirm(config)
 		Parent = overlay
 	})
 	round(dialog, 12)
-	outline(dialog, Google.Theme.Border, 0.05, 1)
+	outline(dialog, Google.Theme.Border, 1, 0)
 	create("TextLabel", {
 		Text = config.Title or "Confirm",
 		Font = Enum.Font.GothamBold,
@@ -3099,7 +3120,7 @@ function Google:Prompt(config)
 		Parent = overlay
 	})
 	round(dialog, 12)
-	outline(dialog, Google.Theme.Border, 0.05, 1)
+	outline(dialog, Google.Theme.Border, 1, 0)
 	create("TextLabel", {
 		Text = config.Title or "Input",
 		Font = Enum.Font.GothamBold,
@@ -3139,7 +3160,7 @@ function Google:Prompt(config)
 		Parent = dialog
 	})
 	round(input, 8)
-	outline(input, Google.Theme.Border, 0.08, 1)
+	outline(input, Google.Theme.Border, 0.82, 1)
 	pad(input, 10, 10, 0, 0)
 	local cancel = create("TextButton", {
 		Text = config.CancelText or "Cancel",
@@ -4153,8 +4174,8 @@ function Section:CreateParagraph(config)
 		self.Instance.BackgroundColor3 = bg
 		if self.outline then
 			self.outline.Color = strokeColor
-			self.outline.Transparency = 0.55
-			self.outline.Thickness = 0.75
+			self.outline.Transparency = 1
+			self.outline.Thickness = 0
 		end
 		if self.ParagraphGradient then
 			self.ParagraphGradient.Color = ColorSequence.new({
@@ -4314,16 +4335,18 @@ local function shortText(label, value)
 end
 
 local function softCard(parent, height, title)
-	local frame = create("Frame", {
+	local frame = create("CanvasGroup", {
 		Name = title or "Card",
 		Size = UDim2.new(1, 0, 0, height),
 		BackgroundColor3 = Google.Theme.CardAlt,
 		BorderSizePixel = 0,
-		ClipsDescendants = false,
+		ClipsDescendants = true,
+		GroupTransparency = 0,
 		Parent = parent
 	})
-	round(frame, 12)
-	local stroke = outline(frame, Google.Theme.Border, 0.55, 0.75)
+	round(frame, 14)
+	surface(frame, Google.Theme.CardAlt, Google.Theme.Card)
+	local stroke = outline(frame, Google.Theme.Border, 1, 0)
 	return frame, stroke
 end
 
@@ -4568,9 +4591,10 @@ local function makeCard(parent, config, grid)
 	end
 	function card:ApplyTheme()
 		self.Instance.BackgroundColor3 = Google.Theme.CardAlt
+		surface(self.Instance, Google.Theme.CardAlt, Google.Theme.Card)
 		self.Stroke.Color = Google.Theme.Border
-		self.Stroke.Transparency = 0.55
-		self.Stroke.Thickness = 0.75
+		self.Stroke.Transparency = 1
+		self.Stroke.Thickness = 0
 		self.TitleLabel.TextColor3 = Google.Theme.Text
 		self.SubtitleLabel.TextColor3 = Google.Theme.Muted
 		if self.IconWrap then self.IconWrap.BackgroundColor3 = Google.Theme.PrimarySoft end
@@ -4633,7 +4657,7 @@ local function makeImageCard(parent, config, grid)
 	})
 	round(image, 10)
 	card.Image = image
-	card.ImageStroke = outline(image, Google.Theme.Border, 0.54, 0.75)
+	card.ImageStroke = outline(image, Google.Theme.Border, 0.86, 1)
 	local title = create("TextLabel", {
 		Name = "Title",
 		Text = card.Title,
@@ -4669,13 +4693,14 @@ local function makeImageCard(parent, config, grid)
 	end
 	function card:ApplyTheme()
 		self.Instance.BackgroundColor3 = Google.Theme.CardAlt
+		surface(self.Instance, Google.Theme.CardAlt, Google.Theme.Card)
 		self.Stroke.Color = Google.Theme.Border
-		self.Stroke.Transparency = 0.55
-		self.Stroke.Thickness = 0.75
+		self.Stroke.Transparency = 1
+		self.Stroke.Thickness = 0
 		self.Image.BackgroundColor3 = Google.Theme.Input
 		self.ImageStroke.Color = Google.Theme.Border
-		self.ImageStroke.Transparency = 0.54
-		self.ImageStroke.Thickness = 0.75
+		self.ImageStroke.Transparency = 0.86
+		self.ImageStroke.Thickness = 1
 		self.TitleLabel.TextColor3 = Google.Theme.Text
 	end
 	function card:Destroy()
@@ -4954,7 +4979,7 @@ function Section:CreateFilterBar(config)
 			Parent = scroller
 		})
 		roundFull(chip)
-		control.ChipStrokes[name] = outline(chip, Google.Theme.Border, 0.08, 1)
+		control.ChipStrokes[name] = outline(chip, Google.Theme.Border, 0.84, 1)
 		control.Chips[name] = chip
 		styleChip(chip, active)
 		bind(control.Connections, chip.MouseButton1Click, function()
@@ -5390,7 +5415,7 @@ function Section:CreateTable(config)
 				Parent = self.Body
 			})
 			round(line, 8)
-			outline(line, Google.Theme.Border, 0.56, 0.75)
+			outline(line, Google.Theme.Border, 0.9, 1)
 			for i = 1, count do
 				cell(line, row[i], i, count, false)
 			end
