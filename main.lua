@@ -125,11 +125,12 @@ local function pad(parent, left, right, top, bottom)
 end
 
 local function surface(parent, topColor, bottomColor)
-	local gradient = parent and parent:FindFirstChild("SurfaceShade")
-	if gradient then
-		gradient:Destroy()
+	if parent then
+		local old = parent:FindFirstChild("SurfaceShade")
+		if old then
+			old:Destroy()
+		end
 	end
-	return nil
 end
 
 local motion = {
@@ -1111,17 +1112,16 @@ function Tab:CreateSection(config)
 	section.Connections = {}
 	section.Collapsed = config.Collapsed or false
 
-	local frame = create("CanvasGroup", {
+	local frame = create("Frame", {
 		Name = section.Name,
 		Size = UDim2.new(1, 0, 0, 56),
 		BackgroundColor3 = Google.Theme.Card,
+		BackgroundTransparency = 0,
 		BorderSizePixel = 0,
 		ClipsDescendants = true,
-		GroupTransparency = 0,
 		Parent = self.Page
 	})
 	round(frame, 12)
-	surface(frame, Google.Theme.Card, Google.Theme.CardAlt)
 	section.Instance = frame
 	section.outline = outline(frame, Google.Theme.Border, 1, 0)
 
@@ -1216,7 +1216,6 @@ function Tab:GetStandaloneSection()
 		BackgroundColor3 = Google.Theme.Card,
 		BorderSizePixel = 0,
 		ClipsDescendants = true,
-		GroupTransparency = 0,
 		LayoutOrder = -1000,
 		Parent = self.Page
 	})
@@ -1439,7 +1438,7 @@ end
 
 function Section:ApplyTheme()
 	self.Instance.BackgroundColor3 = Google.Theme.Card
-	surface(self.Instance, Google.Theme.Card, Google.Theme.CardAlt)
+	self.Instance.BackgroundTransparency = 0
 	self.outline.Color = Google.Theme.Border
 	self.outline.Transparency = 1
 	self.outline.Thickness = 0
@@ -2779,6 +2778,7 @@ function Window:ApplyTheme()
 	self.SidebarLine.BackgroundColor3 = theme.Border
 	self.SidebarLine.BackgroundTransparency = 0.45
 	self.PageWrap.BackgroundColor3 = theme.Page
+	self.PageWrap.BackgroundTransparency = 0
 	self.TitleIconWrap.BackgroundColor3 = theme.PrimarySoft
 	Google.SetIconColor(self.TitleIcon, theme.Primary)
 	self.TitleLabel.TextColor3 = theme.Text
@@ -2789,6 +2789,8 @@ function Window:ApplyTheme()
 	Google.SetIconColor(self.CloseIcon, theme.Muted)
 	for _, tab in ipairs(self.Tabs) do
 		self:ApplyTabResponsiveStyle(tab)
+		tab.Page.BackgroundTransparency = 1
+		tab.Page.ScrollBarImageColor3 = theme.BorderStrong
 		tab:ApplyTheme()
 	end
 	self:UpdateTabListCanvas()
@@ -4327,17 +4329,16 @@ local function shortText(label, value)
 end
 
 local function softCard(parent, height, title)
-	local frame = create("CanvasGroup", {
+	local frame = create("Frame", {
 		Name = title or "Card",
 		Size = UDim2.new(1, 0, 0, height),
 		BackgroundColor3 = Google.Theme.CardAlt,
+		BackgroundTransparency = 0,
 		BorderSizePixel = 0,
 		ClipsDescendants = true,
-		GroupTransparency = 0,
 		Parent = parent
 	})
 	round(frame, 14)
-	surface(frame, Google.Theme.CardAlt, Google.Theme.Card)
 	local stroke = outline(frame, Google.Theme.Border, 1, 0)
 	return frame, stroke
 end
@@ -4583,7 +4584,7 @@ local function makeCard(parent, config, grid)
 	end
 	function card:ApplyTheme()
 		self.Instance.BackgroundColor3 = Google.Theme.CardAlt
-		surface(self.Instance, Google.Theme.CardAlt, Google.Theme.Card)
+		self.Instance.BackgroundTransparency = 0
 		self.Stroke.Color = Google.Theme.Border
 		self.Stroke.Transparency = 1
 		self.Stroke.Thickness = 0
@@ -4685,7 +4686,7 @@ local function makeImageCard(parent, config, grid)
 	end
 	function card:ApplyTheme()
 		self.Instance.BackgroundColor3 = Google.Theme.CardAlt
-		surface(self.Instance, Google.Theme.CardAlt, Google.Theme.Card)
+		self.Instance.BackgroundTransparency = 0
 		self.Stroke.Color = Google.Theme.Border
 		self.Stroke.Transparency = 1
 		self.Stroke.Thickness = 0
