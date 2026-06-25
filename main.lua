@@ -125,19 +125,11 @@ local function pad(parent, left, right, top, bottom)
 end
 
 local function surface(parent, topColor, bottomColor)
-	local gradient = parent:FindFirstChild("SurfaceShade")
-	if not gradient then
-		gradient = create("UIGradient", {
-			Name = "SurfaceShade",
-			Rotation = 90,
-			Parent = parent
-		})
+	local gradient = parent and parent:FindFirstChild("SurfaceShade")
+	if gradient then
+		gradient:Destroy()
 	end
-	gradient.Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, topColor),
-		ColorSequenceKeypoint.new(1, bottomColor)
-	})
-	return gradient
+	return nil
 end
 
 local motion = {
