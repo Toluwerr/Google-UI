@@ -3469,6 +3469,17 @@ local function addDisabledState(control, refresh)
 	return control
 end
 
+local function removeButtonChrome(button)
+	if not button then
+		return
+	end
+	for _, child in ipairs(button:GetChildren()) do
+		if child:IsA("UIStroke") or child:IsA("UIGradient") then
+			child:Destroy()
+		end
+	end
+end
+
 local createButtonBase = Section.CreateButton
 function Section:CreateButton(config)
 	config = config or {}
@@ -3478,10 +3489,12 @@ function Section:CreateButton(config)
 	guardCallback(control)
 	if control.Button then
 		control.Button.ClipsDescendants = true
+		control.Button.BorderSizePixel = 0
 		round(control.Button, tonumber(config.CornerRadius) or 10)
-		local buttonColor = componentColor("Button", Google.Theme.Primary)
+		removeButtonChrome(control.Button)
+		control.ButtonStroke = nil
+		control.ButtonGradient = nil
 		control.ButtonScale = getScale(control.Button)
-		control.ButtonGradient = getGradient(control.Button, buttonColor, blend(buttonColor, Color3.new(1, 1, 1), 0.12), 90)
 	end
 	local function applyVariant(self)
 		local variant = string.lower(tostring(self.Variant or "Primary"))
@@ -3506,14 +3519,9 @@ function Section:CreateButton(config)
 			foreground = Color3.fromRGB(22, 28, 36)
 		end
 		if self.Button then
+			removeButtonChrome(self.Button)
 			self.Button.BackgroundColor3 = background
 			self.Button.BackgroundTransparency = self.Disabled and 0.55 or transparent
-			if self.ButtonGradient then
-				self.ButtonGradient.Color = ColorSequence.new({
-					ColorSequenceKeypoint.new(0, blend(background, Color3.new(1, 1, 1), variant == "secondary" and 0.02 or 0.08)),
-					ColorSequenceKeypoint.new(1, background)
-				})
-			end
 		end
 		if self.TextLabel then
 			self.TextLabel.TextColor3 = foreground
