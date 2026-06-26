@@ -3480,8 +3480,6 @@ function Section:CreateButton(config)
 		control.Button.ClipsDescendants = true
 		round(control.Button, tonumber(config.CornerRadius) or 10)
 		local buttonColor = componentColor("Button", Google.Theme.Primary)
-		local buttonHover = componentColor("ButtonHover", Google.Theme.PrimaryHover)
-		control.ButtonStroke = getStroke(control.Button, "ButtonStroke", buttonHover, 0.25, 1)
 		control.ButtonScale = getScale(control.Button)
 		control.ButtonGradient = getGradient(control.Button, buttonColor, blend(buttonColor, Color3.new(1, 1, 1), 0.12), 90)
 	end
@@ -3489,37 +3487,27 @@ function Section:CreateButton(config)
 		local variant = string.lower(tostring(self.Variant or "Primary"))
 		local background = componentColor("Button", Google.Theme.Primary)
 		local foreground = Color3.new(1, 1, 1)
-		local strokeColor = componentColor("ButtonHover", Google.Theme.PrimaryHover)
 		local transparent = 0
 		if variant == "secondary" then
 			background = Google.Theme.CardAlt
 			foreground = Google.Theme.Text
-			strokeColor = Google.Theme.BorderStrong
 		elseif variant == "ghost" then
 			background = Google.Theme.Hover
 			foreground = componentColor("Button", Google.Theme.Primary)
-			strokeColor = Google.Theme.Border
 			transparent = 0.15
 		elseif variant == "danger" or variant == "red" then
 			background = Google.Theme.Danger
 			foreground = Color3.new(1, 1, 1)
-			strokeColor = Google.Theme.Danger
 		elseif variant == "success" or variant == "green" then
 			background = Google.Theme.Success
 			foreground = Color3.new(1, 1, 1)
-			strokeColor = Google.Theme.Success
 		elseif variant == "warning" or variant == "yellow" then
 			background = Google.Theme.Warning
 			foreground = Color3.fromRGB(22, 28, 36)
-			strokeColor = Google.Theme.Warning
 		end
 		if self.Button then
 			self.Button.BackgroundColor3 = background
 			self.Button.BackgroundTransparency = self.Disabled and 0.55 or transparent
-			if self.ButtonStroke then
-				self.ButtonStroke.Color = strokeColor
-				self.ButtonStroke.Transparency = self.Disabled and 0.45 or 0.18
-			end
 			if self.ButtonGradient then
 				self.ButtonGradient.Color = ColorSequence.new({
 					ColorSequenceKeypoint.new(0, blend(background, Color3.new(1, 1, 1), variant == "secondary" and 0.02 or 0.08)),
