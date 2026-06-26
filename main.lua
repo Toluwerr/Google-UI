@@ -439,6 +439,28 @@ Google.Themes = {
 		Hover = Color3.fromRGB(240, 249, 244),
 		Shadow = Color3.fromRGB(15, 23, 42)
 	},
+	DarkBlue = {
+		Window = Color3.fromRGB(7, 8, 10),
+		Topbar = Color3.fromRGB(10, 11, 14),
+		Sidebar = Color3.fromRGB(8, 9, 12),
+		Page = Color3.fromRGB(5, 6, 8),
+		Card = Color3.fromRGB(13, 14, 17),
+		CardAlt = Color3.fromRGB(18, 19, 23),
+		Text = Color3.fromRGB(238, 242, 247),
+		Muted = Color3.fromRGB(156, 166, 182),
+		Subtle = Color3.fromRGB(96, 105, 120),
+		Border = Color3.fromRGB(26, 28, 34),
+		BorderStrong = Color3.fromRGB(42, 45, 54),
+		Primary = Color3.fromRGB(66, 133, 244),
+		PrimaryHover = Color3.fromRGB(95, 157, 247),
+		PrimarySoft = Color3.fromRGB(24, 47, 86),
+		Success = Color3.fromRGB(52, 168, 83),
+		Warning = Color3.fromRGB(251, 188, 4),
+		Danger = Color3.fromRGB(234, 67, 53),
+		Input = Color3.fromRGB(9, 10, 13),
+		Hover = Color3.fromRGB(18, 20, 25),
+		Shadow = Color3.fromRGB(0, 0, 0)
+	},
 	DarkGoogle = {
 		Window = Color3.fromRGB(7, 8, 10),
 		Topbar = Color3.fromRGB(10, 11, 14),
@@ -4370,10 +4392,12 @@ end
 
 local baseThemes = Google.Themes
 Google.Themes = {
+	Blue = baseThemes.Blue,
 	Google = baseThemes.Google,
 	Red = baseThemes.Red,
 	Yellow = baseThemes.Yellow,
 	Green = baseThemes.Green,
+	DarkBlue = baseThemes.DarkBlue,
 	DarkGoogle = baseThemes.DarkGoogle,
 	DarkRed = baseThemes.DarkRed,
 	DarkYellow = baseThemes.DarkYellow,
