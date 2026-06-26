@@ -305,7 +305,7 @@ end
 
 Google.Windows = {}
 Google.Themes = {
-	Google = {
+	Blue = {
 		Window = Color3.fromRGB(248, 250, 252),
 		Topbar = Color3.fromRGB(255, 255, 255),
 		Sidebar = Color3.fromRGB(255, 255, 255),
@@ -320,12 +320,40 @@ Google.Themes = {
 		Primary = Color3.fromRGB(26, 115, 232),
 		PrimaryHover = Color3.fromRGB(24, 102, 204),
 		PrimarySoft = Color3.fromRGB(232, 240, 254),
+		Success = Color3.fromRGB(66, 133, 244),
+		Warning = Color3.fromRGB(66, 133, 244),
+		Danger = Color3.fromRGB(66, 133, 244),
+		Input = Color3.fromRGB(255, 255, 255),
+		Hover = Color3.fromRGB(241, 245, 249),
+		Shadow = Color3.fromRGB(15, 23, 42)
+	},
+	Google = {
+		Window = Color3.fromRGB(248, 250, 252),
+		Topbar = Color3.fromRGB(255, 255, 255),
+		Sidebar = Color3.fromRGB(255, 255, 255),
+		Page = Color3.fromRGB(245, 247, 251),
+		Card = Color3.fromRGB(255, 255, 255),
+		CardAlt = Color3.fromRGB(248, 250, 252),
+		Text = Color3.fromRGB(31, 41, 55),
+		Muted = Color3.fromRGB(100, 116, 139),
+		Subtle = Color3.fromRGB(148, 163, 184),
+		Border = Color3.fromRGB(226, 232, 240),
+		BorderStrong = Color3.fromRGB(203, 213, 225),
+		Primary = Color3.fromRGB(66, 133, 244),
+		PrimaryHover = Color3.fromRGB(52, 103, 209),
+		PrimarySoft = Color3.fromRGB(232, 240, 254),
 		Success = Color3.fromRGB(52, 168, 83),
 		Warning = Color3.fromRGB(251, 188, 4),
 		Danger = Color3.fromRGB(234, 67, 53),
 		Input = Color3.fromRGB(255, 255, 255),
 		Hover = Color3.fromRGB(241, 245, 249),
-		Shadow = Color3.fromRGB(15, 23, 42)
+		Shadow = Color3.fromRGB(15, 23, 42),
+		TabAccents = {
+			{Color = Color3.fromRGB(66, 133, 244), Soft = Color3.fromRGB(232, 240, 254)},
+			{Color = Color3.fromRGB(234, 67, 53), Soft = Color3.fromRGB(252, 232, 230)},
+			{Color = Color3.fromRGB(251, 188, 4), Soft = Color3.fromRGB(254, 247, 224)},
+			{Color = Color3.fromRGB(52, 168, 83), Soft = Color3.fromRGB(230, 244, 234)}
+		}
 	},
 	Red = {
 		Window = Color3.fromRGB(248, 250, 252),
@@ -959,6 +987,8 @@ function Window:CreateTab(config)
 	tab.Window = self
 	tab.Name = config.Name or "Tab"
 	tab.Icon = config.Icon or "circle-help"
+	tab.AccentColor = config.AccentColor or config.Accent
+	tab.Index = #self.Tabs + 1
 	tab.Sections = {}
 	tab.Connections = {}
 	tab.Active = false
@@ -1064,12 +1094,32 @@ function Window:SelectTab(tab)
 	tab:SetActive(true)
 end
 
+function Tab:GetAccent()
+	if typeof(self.AccentColor) == "Color3" then
+		return self.AccentColor, Google.Theme.PrimarySoft
+	end
+
+	local accents = Google.Theme.TabAccents
+	if type(accents) == "table" and #accents > 0 then
+		local entry = accents[((self.Index or 1) - 1) % #accents + 1]
+		if type(entry) == "table" and typeof(entry.Color) == "Color3" then
+			return entry.Color, entry.Soft or Google.Theme.PrimarySoft
+		elseif typeof(entry) == "Color3" then
+			return entry, Google.Theme.PrimarySoft
+		end
+	end
+
+	return Google.Theme.Primary, Google.Theme.PrimarySoft
+end
+
 function Tab:SetActive(active)
 	self.Active = active
+	local accentColor, accentSoft = self:GetAccent()
 	if active then
 		self.Page.Visible = true
 		self.Page.Position = self.Window.IsMobile and UDim2.fromOffset(0, 10) or UDim2.fromOffset(6, 0)
 		self.Accent.Visible = true
+		self.Accent.BackgroundColor3 = accentColor
 		self.Accent.BackgroundTransparency = 1
 		if self.Window.IsMobile then
 			self.Accent.Size = UDim2.new(0, 8, 0, 3)
@@ -1081,9 +1131,9 @@ function Tab:SetActive(active)
 			animate(self.Accent, {BackgroundTransparency = 0, Size = UDim2.new(0, 3, 0, 18)}, motion.Base)
 		end
 		animate(self.Page, {Position = UDim2.fromOffset(0, 0)}, motion.Base)
-		animate(self.Button, {BackgroundTransparency = 0, BackgroundColor3 = Google.Theme.PrimarySoft}, motion.Base)
-		self.TextLabel.TextColor3 = Google.Theme.Primary
-		Google.SetIconColor(self.IconLabel, Google.Theme.Primary)
+		animate(self.Button, {BackgroundTransparency = 0, BackgroundColor3 = accentSoft}, motion.Base)
+		self.TextLabel.TextColor3 = accentColor
+		Google.SetIconColor(self.IconLabel, accentColor)
 	else
 		animate(self.Button, {BackgroundTransparency = 1}, motion.Fast)
 		local inactiveAccentSize = self.Window.IsMobile and UDim2.new(0, 8, 0, 3) or UDim2.new(0, 3, 0, 8)
