@@ -211,6 +211,14 @@ local function isColor(value)
 	return typeof(value) == "Color3"
 end
 
+local function componentColor(name, fallback)
+	local color = Google.Theme and Google.Theme[name]
+	if typeof(color) == "Color3" then
+		return color
+	end
+	return fallback
+end
+
 local function assetIdFromImage(value)
 	if typeof(value) == "number" then
 		return tostring(value)
@@ -348,6 +356,16 @@ Google.Themes = {
 		Input = Color3.fromRGB(255, 255, 255),
 		Hover = Color3.fromRGB(241, 245, 249),
 		Shadow = Color3.fromRGB(15, 23, 42),
+		Button = Color3.fromRGB(66, 133, 244),
+		ButtonHover = Color3.fromRGB(52, 103, 209),
+		Toggle = Color3.fromRGB(52, 168, 83),
+		ToggleHover = Color3.fromRGB(36, 130, 63),
+		Slider = Color3.fromRGB(251, 188, 4),
+		SliderText = Color3.fromRGB(174, 122, 0),
+		Dropdown = Color3.fromRGB(234, 67, 53),
+		DropdownSoft = Color3.fromRGB(252, 232, 230),
+		InputAccent = Color3.fromRGB(66, 133, 244),
+		Keybind = Color3.fromRGB(234, 67, 53),
 		TabAccents = {
 			{Color = Color3.fromRGB(66, 133, 244), Soft = Color3.fromRGB(232, 240, 254)},
 			{Color = Color3.fromRGB(234, 67, 53), Soft = Color3.fromRGB(252, 232, 230)},
@@ -2195,7 +2213,7 @@ function Section:CreateTextbox(config)
 		return self.Value
 	end
 	bind(self.Connections, self.Entry.Focused, function()
-		animate(self.EntryStroke, {Color = Google.Theme.Primary, Transparency = 0}, motion.Fast)
+		animate(self.EntryStroke, {Color = componentColor("InputAccent", Google.Theme.Primary), Transparency = 0}, motion.Fast)
 	end)
 	bind(self.Connections, self.Entry.FocusLost, function()
 		self:Set(self.Entry.Text)
@@ -2261,7 +2279,7 @@ function Section:CreateKeybind(config)
 		return self.Value
 	end
 	bind(self.Connections, self.Button.MouseEnter, function()
-		animate(self.ButtonStroke, {Color = Google.Theme.Primary, Transparency = 0}, motion.Fast)
+		animate(self.ButtonStroke, {Color = componentColor("Keybind", Google.Theme.Primary), Transparency = 0}, motion.Fast)
 	end)
 	bind(self.Connections, self.Button.MouseLeave, function()
 		if not self.Binding then
@@ -2271,7 +2289,7 @@ function Section:CreateKeybind(config)
 	bind(self.Connections, self.Button.MouseButton1Click, function()
 		self.Binding = true
 		self.Button.Text = "..."
-		animate(self.ButtonStroke, {Color = Google.Theme.Primary, Transparency = 0}, motion.Fast)
+		animate(self.ButtonStroke, {Color = componentColor("Keybind", Google.Theme.Primary), Transparency = 0}, motion.Fast)
 	end)
 	bind(self.Connections, UserInputService.InputBegan, function(input, processed)
 		if processed then
@@ -3439,15 +3457,17 @@ function Section:CreateButton(config)
 	if control.Button then
 		control.Button.ClipsDescendants = true
 		round(control.Button, tonumber(config.CornerRadius) or 10)
-		control.ButtonStroke = getStroke(control.Button, "ButtonStroke", Google.Theme.PrimaryHover, 0.25, 1)
+		local buttonColor = componentColor("Button", Google.Theme.Primary)
+		local buttonHover = componentColor("ButtonHover", Google.Theme.PrimaryHover)
+		control.ButtonStroke = getStroke(control.Button, "ButtonStroke", buttonHover, 0.25, 1)
 		control.ButtonScale = getScale(control.Button)
-		control.ButtonGradient = getGradient(control.Button, Google.Theme.Primary, blend(Google.Theme.Primary, Color3.new(1, 1, 1), 0.12), 90)
+		control.ButtonGradient = getGradient(control.Button, buttonColor, blend(buttonColor, Color3.new(1, 1, 1), 0.12), 90)
 	end
 	local function applyVariant(self)
 		local variant = string.lower(tostring(self.Variant or "Primary"))
-		local background = Google.Theme.Primary
+		local background = componentColor("Button", Google.Theme.Primary)
 		local foreground = Color3.new(1, 1, 1)
-		local strokeColor = Google.Theme.PrimaryHover
+		local strokeColor = componentColor("ButtonHover", Google.Theme.PrimaryHover)
 		local transparent = 0
 		if variant == "secondary" then
 			background = Google.Theme.CardAlt
@@ -3455,7 +3475,7 @@ function Section:CreateButton(config)
 			strokeColor = Google.Theme.BorderStrong
 		elseif variant == "ghost" then
 			background = Google.Theme.Hover
-			foreground = Google.Theme.Primary
+			foreground = componentColor("Button", Google.Theme.Primary)
 			strokeColor = Google.Theme.Border
 			transparent = 0.15
 		elseif variant == "danger" or variant == "red" then
@@ -3566,7 +3586,8 @@ end
 
 local function paintToggle(control)
 	local enabled = control.Value and true or false
-	local trackColor = enabled and Google.Theme.Primary or Google.Theme.BorderStrong
+	local toggleColor = componentColor("Toggle", Google.Theme.Primary)
+	local trackColor = enabled and toggleColor or Google.Theme.BorderStrong
 	if control.Switch then
 		control.Switch.Size = UDim2.fromOffset(48, 24)
 		control.Switch.Position = UDim2.new(1, -48, 0.5, -12)
@@ -3605,7 +3626,8 @@ function Section:CreateToggle(config)
 			return self
 		end
 		self.Value = value and true or false
-		local trackColor = self.Value and Google.Theme.Primary or Google.Theme.BorderStrong
+		local toggleColor = componentColor("Toggle", Google.Theme.Primary)
+		local trackColor = self.Value and toggleColor or Google.Theme.BorderStrong
 		if self.Switch then
 			animate(self.Switch, {BackgroundColor3 = trackColor, BackgroundTransparency = 0}, motion.Base)
 		end
@@ -3670,7 +3692,7 @@ local function paintSlider(control, config)
 		removeUiChildren(control.Track, "UIStroke")
 	end
 	if control.Fill then
-		control.Fill.BackgroundColor3 = Google.Theme.Primary
+		control.Fill.BackgroundColor3 = componentColor("Slider", Google.Theme.Primary)
 		control.Fill.BackgroundTransparency = 0
 		control.Fill.BorderSizePixel = 0
 		roundPill(control.Fill)
@@ -3678,7 +3700,7 @@ local function paintSlider(control, config)
 	end
 	if control.Knob then
 		control.Knob.Size = UDim2.fromOffset(18, 18)
-		control.Knob.BackgroundColor3 = Google.Theme.Primary
+		control.Knob.BackgroundColor3 = componentColor("Slider", Google.Theme.Primary)
 		control.Knob.BackgroundTransparency = 0
 		control.Knob.BorderSizePixel = 0
 		roundPill(control.Knob)
@@ -3693,6 +3715,9 @@ local function paintSlider(control, config)
 	control.TrackStroke = nil
 	control.FillGradient = nil
 	control.KnobScale = nil
+	if control.ValueLabel then
+		control.ValueLabel.TextColor3 = componentColor("SliderText", componentColor("Slider", Google.Theme.Primary))
+	end
 end
 
 local createSlider = Section.CreateSlider
@@ -3837,19 +3862,22 @@ function Section:CreateDropdown(config)
 			if item:IsA("TextButton") then
 				local selected = optionSelected(self, item.Name)
 				item.BackgroundTransparency = selected and 0.15 or 1
-				item.BackgroundColor3 = selected and Google.Theme.PrimarySoft or Google.Theme.Hover
+				local dropdownColor = componentColor("Dropdown", Google.Theme.Primary)
+				local dropdownSoft = componentColor("DropdownSoft", Google.Theme.PrimarySoft)
+				item.BackgroundColor3 = selected and dropdownSoft or Google.Theme.Hover
 				local label = item:FindFirstChildOfClass("TextLabel")
 				if label then
-					label.TextColor3 = selected and Google.Theme.Primary or Google.Theme.Text
+					label.TextColor3 = selected and dropdownColor or Google.Theme.Text
 					label.Size = UDim2.new(1, -34, 1, 0)
 				end
 				local check = item:FindFirstChild("SelectedCheck")
 				if not check then
-					check = Google.CreateIcon("check", 14, Google.Theme.Primary, item, {
+					check = Google.CreateIcon("check", 14, dropdownColor, item, {
 						Name = "SelectedCheck",
 						Position = UDim2.new(1, -22, 0.5, -7)
 					})
 				end
+				Google.SetIconColor(check, dropdownColor)
 				check.Visible = selected
 			end
 		end
@@ -3871,7 +3899,7 @@ function Section:CreateDropdown(config)
 	function control:OpenMenu()
 		if self.Disabled then return self end
 		originalOpen(self)
-		if self.MainStroke then animate(self.MainStroke, {Color = Google.Theme.Primary, Transparency = 0}, motion.Fast) end
+		if self.MainStroke then animate(self.MainStroke, {Color = componentColor("Dropdown", Google.Theme.Primary), Transparency = 0}, motion.Fast) end
 		return self
 	end
 	local originalClose = control.CloseMenu
@@ -3932,6 +3960,9 @@ function Section:CreateDropdown(config)
 	local originalApply = control.ApplyTheme
 	function control:ApplyTheme()
 		if originalApply then originalApply(self) end
+		if self.Arrow then
+			Google.SetIconColor(self.Arrow, componentColor("Dropdown", Google.Theme.Muted))
+		end
 		decorateOptions(self)
 	end
 	addDisabledState(control, function(self)
